@@ -30,10 +30,10 @@ Download specific folders from GitHub repositories without cloning the entire re
 
 ```bash
 # Install globally
-npm install -g Git-rip
+npm install -g git-rip
 
 # Or run with npx
-npx Git-rip
+npx git-rip
 ```
 
 ## 🎯 Usage
@@ -41,13 +41,13 @@ npx Git-rip
 ### Basic Usage
 
 ```bash
-git-rip https://github.com/owner/repo/tree/main/src/components
+git-rip https://github.com/sairajB/git-rip/tree/main/src
 ```
 
 ### With Output Directory
 
 ```bash
-git-rip https://github.com/owner/repo/tree/main/src/components -o ./my-components
+git-rip https://github.com/sairajB/git-rip/tree/main/src -o ripped-folder
 ```
 
 ### Command Line Options
