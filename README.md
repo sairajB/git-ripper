@@ -1,10 +1,10 @@
-# 📁 GitHub Folder Downloader
+# 📁 Git-Rip
 
 <div align="center">
 
-[![NPM version](https://img.shields.io/npm/v/github-folder-downloader.svg)](https://www.npmjs.com/package/github-folder-downloader)
-[![License](https://img.shields.io/npm/l/github-folder-downloader.svg)](https://github.com/yourusername/github-folder-downloader/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/npm/dm/github-folder-downloader.svg)](https://www.npmjs.com/package/github-folder-downloader)
+[![NPM version](https://img.shields.io/npm/v/git-riper.svg)](https://www.npmjs.com/package/git-riper)
+[![License](https://img.shields.io/npm/l/git-riper.svg)](https://github.com/yourusername/git-riper/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/npm/dm/git-riper.svg)](https://www.npmjs.com/package/git-riper)
 
 Download specific folders from GitHub repositories without cloning the entire repo. Fast, simple, and efficient.
 
@@ -30,10 +30,10 @@ Download specific folders from GitHub repositories without cloning the entire re
 
 ```bash
 # Install globally
-npm install -g github-folder-downloader
+npm install -g Git-rip
 
 # Or run with npx
-npx github-folder-downloader
+npx Git-rip
 ```
 
 ## 🎯 Usage
@@ -41,13 +41,13 @@ npx github-folder-downloader
 ### Basic Usage
 
 ```bash
-github-folder-download https://github.com/owner/repo/tree/main/src/components
+git-rip https://github.com/owner/repo/tree/main/src/components
 ```
 
 ### With Output Directory
 
 ```bash
-github-folder-download https://github.com/owner/repo/tree/main/src/components -o ./my-components
+git-rip https://github.com/owner/repo/tree/main/src/components -o ./my-components
 ```
 
 ### Command Line Options
@@ -62,17 +62,17 @@ github-folder-download https://github.com/owner/repo/tree/main/src/components -o
 
 ### Download a React Component Library
 ```bash
-github-folder-download https://github.com/facebook/react/tree/main/packages/react-dom
+git-rip https://github.com/facebook/react/tree/main/packages/react-dom
 ```
 
 ### Download Configuration Files
 ```bash
-github-folder-download https://github.com/microsoft/vscode/tree/main/build -o ./build-config
+git-rip https://github.com/microsoft/vscode/tree/main/build -o ./build-config
 ```
 
 ### Download Documentation
 ```bash
-github-folder-download https://github.com/nodejs/node/tree/main/doc -o ./node-docs
+git-rip https://github.com/nodejs/node/tree/main/doc -o ./node-docs
 ```
 
 ## 🔍 How It Works
