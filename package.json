@@ -1,6 +1,6 @@
 {
     "name": "git-ripper",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Download specific folders from GitHub repositories without cloning the entire repo.",
     "main": "src/index.js",
     "bin": {
@@ -11,13 +11,13 @@
         "dev": "node bin/git-ripper.js"
     },
     "keywords": [
-  "git",
-  "clone",
-  "github",
-  "subfolder",
-  "repository",
-  "download"
-],
+        "git",
+        "clone",
+        "github",
+        "subfolder",
+        "repository",
+        "download"
+    ],
     "author": "sairajb",
     "license": "MIT",
     "dependencies": {
