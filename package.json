@@ -11,12 +11,13 @@
         "dev": "node bin/git-ripper.js"
     },
     "keywords": [
-        "github",
-        "download",
-        "folder",
-        "clone",
-        "repository"
-    ],
+  "git",
+  "clone",
+  "github",
+  "subfolder",
+  "repository",
+  "download"
+],
     "author": "sairajb",
     "license": "MIT",
     "dependencies": {
