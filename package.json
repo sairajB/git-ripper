@@ -1,14 +1,14 @@
 {
-    "name": "git-rip",
-    "version": "0.0.1",
+    "name": "git-ripper",
+    "version": "1.0.0",
     "description": "Download specific folders from GitHub repositories without cloning the entire repo.",
     "main": "src/index.js",
     "bin": {
-      "git-rip": "./bin/git-rip.js"
+      "git-ripper": "./bin/git-ripper.js"
     },
     "scripts": {
       "test": "echo \"Error: no test specified\" && exit 1",
-      "dev": "node bin/git-rip.js"
+      "dev": "node bin/git-ripper.js"
     },
     "keywords": [
       "github",
@@ -25,10 +25,10 @@
     },
     "repository": {
       "type": "git",
-      "url": "git+https://github.com/yourusername/github-folder-downloader.git"
+      "url": "git+https://github.com/sairajB/git-ripper.git"
     },
     "bugs": {
-      "url": "https://github.com/yourusername/github-folder-downloader/issues"
+      "url": "https://github.com/sairajB/git-ripper/issues"
     },
-    "homepage": "https://github.com/yourusername/github-folder-downloader#readme"
+    "homepage": "https://github.com/sairajB/git-ripper#readme"
   }

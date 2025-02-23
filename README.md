@@ -1,10 +1,10 @@
-# 📁 Git-Rip
+# 📁 Git-ripper
 
 <div align="center">
 
-[![NPM version](https://img.shields.io/npm/v/git-riper.svg)](https://www.npmjs.com/package/git-riper)
-[![License](https://img.shields.io/npm/l/git-riper.svg)](https://github.com/yourusername/git-riper/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/npm/dm/git-riper.svg)](https://www.npmjs.com/package/git-riper)
+[![NPM version](https://img.shields.io/npm/v/git-ripper.svg)](https://www.npmjs.com/package/git-ripperper)
+[![License](https://img.shields.io/npm/l/git-ripper.svg)](https://github.com/yourusername/git-ripper/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/npm/dm/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
 
 Download specific folders from GitHub repositories without cloning the entire repo. Fast, simple, and efficient.
 
@@ -30,10 +30,10 @@ Download specific folders from GitHub repositories without cloning the entire re
 
 ```bash
 # Install globally
-npm install -g git-rip
+npm install -g git-ripper
 
 # Or run with npx
-npx git-rip
+npx git-ripper
 ```
 
 ## 🎯 Usage
@@ -41,13 +41,13 @@ npx git-rip
 ### Basic Usage
 
 ```bash
-git-rip https://github.com/sairajB/git-rip/tree/main/src
+git-ripper https://github.com/sairajB/git-ripper/tree/main/src
 ```
 
 ### With Output Directory
 
 ```bash
-git-rip https://github.com/sairajB/git-rip/tree/main/src -o ripped-folder
+git-ripper https://github.com/sairajB/git-ripper/tree/main/src -o ripped-folder
 ```
 
 ### Command Line Options
@@ -62,17 +62,17 @@ git-rip https://github.com/sairajB/git-rip/tree/main/src -o ripped-folder
 
 ### Download a React Component Library
 ```bash
-git-rip https://github.com/facebook/react/tree/main/packages/react-dom
+git-ripper https://github.com/facebook/react/tree/main/packages/react-dom
 ```
 
 ### Download Configuration Files
 ```bash
-git-rip https://github.com/microsoft/vscode/tree/main/build -o ./build-config
+git-ripper https://github.com/microsoft/vscode/tree/main/build -o ./build-config
 ```
 
 ### Download Documentation
 ```bash
-git-rip https://github.com/nodejs/node/tree/main/doc -o ./node-docs
+git-ripper https://github.com/nodejs/node/tree/main/doc -o ./node-docs
 ```
 
 ## 🔍 How It Works
