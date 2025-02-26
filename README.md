@@ -16,6 +16,10 @@ Git-ripper is a lightweight CLI tool that lets you download specific folders fro
 
 </div>
 
+## 💪 Why Choose Git-ripper?
+
+There are multiple ways to download a specific folder from a GitHub repository, such as git sparse-checkout, svn checkout, or manually downloading a ZIP file. However, these methods either require additional setup (git sparse-checkout and svn checkout), download unnecessary files (ZIP method), or have a steep learning curve. git-ripper simplifies the process into a single command, requires no Git installation, and only downloads the folder you need, making it faster, more efficient, and beginner-friendly.
+
 ## 🚀 Features
 
 - 📥 Download specific folders instead of entire repositories
