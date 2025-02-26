@@ -1,7 +1,7 @@
 {
     "name": "git-ripper",
     "version": "1.0.8",
-    "description": "A lightweight CLI tool that downloads specific folders from GitHub repositories without cloning the entire repo. Save bandwidth and time by fetching only the components you need from any repository.",
+    "description": "Git-ripper is a lightweight CLI tool that lets you download specific folders from GitHub repositories without cloning the entire repo. Whether you need a single component from a large monorepo or a quick configuration file, Git-ripper saves time and disk space by fetching only what you need.",
     "main": "src/index.js",
     "bin": {
         "git-ripper": "./bin/git-ripper.js"
