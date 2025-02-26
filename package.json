@@ -1,54 +1,54 @@
 {
     "name": "git-ripper",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "description": "A lightweight CLI tool that downloads specific folders from GitHub repositories without cloning the entire repo. Save bandwidth and time by fetching only the components you need from any repository.",
     "main": "src/index.js",
     "bin": {
-      "git-ripper": "./bin/git-ripper.js"
+        "git-ripper": "./bin/git-ripper.js"
     },
     "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1",
-      "dev": "node bin/git-ripper.js",
-      "lint": "eslint ."
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "node bin/git-ripper.js",
+        "lint": "eslint ."
     },
     "keywords": [
-      "git",
-      "clone",
-      "github",
-      "subfolder",
-      "repository",
-      "download",
-      "partial-clone",
-      "directory-download",
-      "folder-download",
-      "git-utilities",
-      "github-api",
-      "monorepo-tools",
-      "sparse-checkout"
+        "git",
+        "clone",
+        "github",
+        "subfolder",
+        "repository",
+        "download",
+        "partial-clone",
+        "directory-download",
+        "folder-download",
+        "git-utilities",
+        "github-api",
+        "monorepo-tools",
+        "sparse-checkout"
     ],
     "author": "sairajb",
     "license": "MIT",
     "dependencies": {
-      "axios": "^1.6.7",
-      "commander": "^12.0.0"
+        "axios": "^1.6.7",
+        "commander": "^12.0.0"
     },
     "repository": {
-      "type": "git",
-      "url": "git+https://github.com/sairajB/git-ripper.git"
+        "type": "git",
+        "url": "git+https://github.com/sairajB/git-ripper.git"
     },
     "bugs": {
-      "url": "https://github.com/sairajB/git-ripper/issues"
+        "url": "https://github.com/sairajB/git-ripper/issues"
     },
     "homepage": "https://github.com/sairajB/git-ripper",
     "engines": {
-      "node": ">=14.0.0"
+        "node": ">=14.0.0"
     },
     "files": [
-      "bin/",
-      "src/",
-      "LICENSE"
+        "bin/",
+        "src/",
+        "LICENSE"
     ],
     "publishConfig": {
-      "access": "public"
+        "access": "public"
     }
-  }
+}
