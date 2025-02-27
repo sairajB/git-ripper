@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/npm/l/git-ripper.svg)](https://github.com/yourusername/git-ripper/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/npm/dm/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
 
-Git-ripper is a lightweight CLI tool that lets you download specific folders from GitHub repositories without cloning the entire repo. Whether you need a single component from a large monorepo or a quick configuration file, Git-ripper saves time and bandwidth by fetching only what you need.
+CLI tool that lets you download specific folders from GitHub repositories without cloning the entire repo.
 
 [Installation](#installation) •
 [Usage](#usage) •
