@@ -1,57 +1,70 @@
-# 📁 Git-ripper
+# Git-ripper
 
 <div align="center">
 
-[![NPM version](https://img.shields.io/npm/v/git-ripper.svg)](https://www.npmjs.com/package/git-ripperper)
-[![License](https://img.shields.io/npm/l/git-ripper.svg)](https://github.com/yourusername/git-ripper/blob/main/LICENSE)
+[![NPM version](https://img.shields.io/npm/v/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
+[![License](https://img.shields.io/npm/l/git-ripper.svg)](https://github.com/sairajB/git-ripper/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/npm/dm/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
+[![GitHub issues](https://img.shields.io/github/issues/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/issues)
+[![GitHub stars](https://img.shields.io/github/stars/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/stargazers)
 
-CLI tool that lets you download specific folders from GitHub repositories without cloning the entire repo.
+**Download specific folders from GitHub repositories without cloning the entire codebase**
 
 [Installation](#installation) •
 [Usage](#usage) •
 [Features](#features) •
 [Examples](#examples) •
-[Contributing](#contributing)
+[Configuration](#configuration) •
+[Troubleshooting](#troubleshooting) •
+[Contributing](#contributing) •
+[License](#license)
 
 </div>
 
-## 💪 Why Choose Git-ripper?
+## Why Git-ripper?
 
-There are multiple ways to download a specific folder from a GitHub repository, such as git sparse-checkout, svn checkout, or manually downloading a ZIP file. However, these methods either require additional setup (git sparse-checkout and svn checkout), download unnecessary files (ZIP method), or have a steep learning curve. git-ripper simplifies the process into a single command, requires no Git installation, and only downloads the folder you need, making it faster, more efficient, and beginner-friendly.
+Have you ever needed just a single component from a massive repository? Or wanted to reference a specific configuration directory without downloading gigabytes of code? Git-ripper solves this problem by letting you extract and download only the folders you need, saving bandwidth, time, and disk space.
 
-## 🚀 Features
+## Features
 
-- 📥 Download specific folders instead of entire repositories
-- 🌳 Preserve complete folder structure
-- 📂 Specify custom output directory
-- 🔄 Works with any branch
-- 💻 Simple command-line interface
-- ⚡ Fast and lightweight
-- 🔒 No authentication required for public repositories
+- **Selective Downloads**: Fetch specific folders instead of entire repositories
+- **Directory Structure**: Preserves complete folder structure
+- **Custom Output**: Specify your preferred output directory
+- **Branch Support**: Works with any branch, not just the default one
+- **Simple Interface**: Clean, intuitive command-line experience
+- **Lightweight**: Minimal dependencies and fast execution
+- **No Authentication**: Works with public repositories without requiring credentials
 
-## 📦 Installation
+## Installation
+
+### Global Installation (Recommended)
 
 ```bash
-# Install globally
 npm install -g git-ripper
-
-# Or run with npx
-npx git-ripper
 ```
 
-## 🎯 Usage
+This installs Git-ripper as a global command-line tool accessible from anywhere in your terminal.
 
-### Basic Usage
+### On-demand Usage
 
 ```bash
-git-ripper https://github.com/sairajB/git-ripper/tree/main/src
+npx git-ripper <github-folder-url>
 ```
 
-### With Output Directory
+Run Git-ripper directly without installation using `npx`.
+
+## Usage
+
+### Basic Command
 
 ```bash
-git-ripper https://github.com/sairajB/git-ripper/tree/main/src -o ripped-folder
+git-ripper https://github.com/username/repository/tree/branch/folder
+```
+
+### With Custom Output Directory
+
+```bash
+git-ripper https://github.com/username/repository/tree/branch/folder -o ./my-output-folder
 ```
 
 ### Command Line Options
@@ -62,38 +75,80 @@ git-ripper https://github.com/sairajB/git-ripper/tree/main/src -o ripped-folder
 | `-V, --version` | Show version number | - |
 | `-h, --help` | Show help | - |
 
-## 📝 Examples
+## Examples
 
-### Download a React Component Library
+### Extract a Component Library
+
 ```bash
+# Download React DOM package
 git-ripper https://github.com/facebook/react/tree/main/packages/react-dom
 ```
 
-### Download Configuration Files
+### Get Configuration Files
+
 ```bash
-git-ripper https://github.com/microsoft/vscode/tree/main/build -o ./build-config
+# Extract VS Code build configuration
+git-ripper https://github.com/microsoft/vscode/tree/main/build -o ./vscode-build-config
 ```
 
 ### Download Documentation
+
 ```bash
+# Get Node.js documentation
 git-ripper https://github.com/nodejs/node/tree/main/doc -o ./node-docs
 ```
 
-## 🔍 How It Works
+### Copy UI Templates
 
-1. Parses the provided GitHub URL to extract:
-   - Repository owner
-   - Repository name
-   - Branch name (defaults to 'main')
-   - Target folder path
+```bash
+# Extract Tailwind components
+git-ripper https://github.com/tailwindlabs/tailwindcss/tree/master/src/components -o ./tailwind-components
+```
 
-2. Uses GitHub's API to fetch the folder structure
-3. Downloads each file while maintaining the directory structure
-4. Saves files to the specified output directory
+## How It Works
 
-## 🤝 Contributing
+Git-ripper operates in four stages:
 
-Contributions are always welcome! Here's how you can help:
+1. **URL Parsing**: Extracts repository owner, name, branch, and target folder path
+2. **API Request**: Uses GitHub's API to fetch the folder structure
+3. **Content Download**: Retrieves each file individually while maintaining directory structure
+4. **Local Storage**: Saves files to your specified output directory
+
+## Configuration
+
+Git-ripper works out of the box without configuration. For rate-limited GitHub API usage, authentication support is under development.
+
+## Troubleshooting
+
+### Common Issues
+
+#### Rate Limit Exceeded
+
+```
+Error: Request failed with status code 403
+```
+
+**Solution**: GitHub limits unauthenticated API requests. Wait a few minutes and try again.
+
+#### Invalid URL Format
+
+```
+Error: Invalid GitHub URL format
+```
+
+**Solution**: Ensure your URL follows the pattern: `https://github.com/owner/repo/tree/branch/folder`
+
+#### Folder Not Found
+
+```
+Error: Path not found in repository
+```
+
+**Solution**: Verify the folder path exists in the specified branch and repository.
+
+## Contributing
+
+Contributions make the open-source community an amazing place to learn, inspire, and create. Any contributions to Git-ripper are **greatly appreciated**.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -101,39 +156,29 @@ Contributions are always welcome! Here's how you can help:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+See the [open issues](https://github.com/sairajB/git-ripper/issues) for a list of proposed features and known issues.
+
+## Roadmap
+
+- [ ] Add GitHub token authentication
+- [ ] Support for GitLab and Bitbucket repositories
+- [ ] Download from specific commits or tags
+- [ ] Dry run mode
+- [ ] File filtering options
+- [ ] CLI interactive mode
+
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🐛 Troubleshooting
+## Acknowledgments
 
-### Rate Limiting
-If you encounter rate limiting issues with the GitHub API, you can:
-- Wait and try again later
-- Use a GitHub token (coming soon)
-
-### Common Issues
-
-1. **"Invalid URL" Error**
-   - Make sure the URL follows the format: `https://github.com/owner/repo/tree/branch/folder`
-   - Check if the repository and folder exist
-
-2. **"Path not found" Error**
-   - Verify the folder path is correct
-   - Check if the branch name is correct
-
-## 🙏 Acknowledgments
-
-- Thanks to GitHub for providing the API
-- Inspired by the need to download specific folders without cloning entire repositories
-
-## 📬 Contact
-
-- Create an issue in this repository
-- Follow me on [GitHub](https://github.com/sairajB)
+- GitHub API for making this tool possible
+- Everyone who has provided feedback and suggestions
 
 ---
 
 <div align="center">
-Made with ❤️ by sairajB
+<p>Made with ❤️ by <a href="https://github.com/sairajB">sairajB</a></p>
+<p>If you find this tool useful, consider <a href="https://github.com/sponsors/sairajB">sponsoring</a> its development</p>
 </div>
