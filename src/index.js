@@ -4,7 +4,7 @@ const { downloadFolder } = require('./downloader');
 
 const initializeCLI = () => {
   program
-    .version('1.1.1')
+    .version('1.1.2')
     .description('Clone specific folders from GitHub repositories')
     .argument('<url>', 'GitHub URL of the folder to clone')
     .option('-o, --output <directory>', 'Output directory', process.cwd())
