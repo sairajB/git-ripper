@@ -1,6 +1,6 @@
-const { program } = require('commander');
-const { parseGitHubUrl } = require('./parser');
-const { downloadFolder } = require('./downloader');
+import { program } from 'commander';
+import { parseGitHubUrl } from './parser.js';
+import { downloadFolder } from './downloader.js';
 
 const initializeCLI = () => {
   program
@@ -10,8 +10,13 @@ const initializeCLI = () => {
     .option('-o, --output <directory>', 'Output directory', process.cwd())
     .action(async (url, options) => {
       try {
+        console.log(`Parsing URL: ${url}`);
         const parsedUrl = parseGitHubUrl(url);
+        console.log(`Parsed URL:`, parsedUrl);
+
+        console.log(`Downloading folder to: ${options.output}`);
         await downloadFolder(parsedUrl, options.output);
+        
         console.log('Folder cloned successfully!');
       } catch (error) {
         console.error('Error:', error.message);
@@ -22,6 +27,10 @@ const initializeCLI = () => {
   program.parse(process.argv);
 };
 
-module.exports = {
-  downloadFolder: initializeCLI
-};
+// Ensure function is executed when run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  initializeCLI();
+}
+
+// ✅ Fix the incorrect export
+export { initializeCLI, downloadFolder };

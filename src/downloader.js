@@ -1,11 +1,17 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
-const pLimit = require('p-limit').default || require('p-limit');
-const cliProgress = require("cli-progress"); // Progress bar
+import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import cliProgress from "cli-progress";
+import pLimit from "p-limit";
 
 // Set concurrency limit (adjustable based on network performance)
 const limit = pLimit(5);
+
+// Ensure __dirname and __filename are available in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Fetches the contents of a folder from a GitHub repository
@@ -78,7 +84,6 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
   
   // Progress bar setup
   const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-   totalFiles = contents.filter(item => item.type === "blob").length;
   bar.start(totalFiles, 0);
 
   // Create download promises with concurrency control
@@ -106,6 +111,5 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
   console.log(`Downloaded ${succeeded} files successfully${failed > 0 ? `, ${failed} files failed` : ""}`);
 };
 
-module.exports = {
-  downloadFolder,
-};
+// Export functions in ESM format
+export { downloadFolder };

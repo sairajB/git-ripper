@@ -1,3 +1,4 @@
 #!/usr/bin/env node
-const { downloadFolder } = require('../src/index');
-downloadFolder();
+import { initializeCLI } from '../src/index.js';
+
+initializeCLI();
