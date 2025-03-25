@@ -7,7 +7,7 @@ import cliProgress from "cli-progress";
 import pLimit from "p-limit";
 
 // Set concurrency limit (adjustable based on network performance)
-const limit = pLimit(5);
+const limit = pLimit(500);
 
 // Ensure __dirname and __filename are available in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -90,6 +90,8 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
   const fileDownloadPromises = contents
     .filter((item) => item.type === "blob")
     .map((item) => {
+      // Keep the original structure by preserving the folder name
+      // For a path like "src/components/Button.js" relative to "src", store as "components/Button.js"
       const relativePath = item.path.substring(folderPath.length).replace(/^\//, "");
       const outputFilePath = path.join(outputDir, relativePath);
       
