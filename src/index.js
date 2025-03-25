@@ -4,7 +4,7 @@ import { downloadFolder } from './downloader.js';
 
 const initializeCLI = () => {
   program
-    .version('1.2.1')
+    .version('1.3.0')
     .description('Clone specific folders from GitHub repositories')
     .argument('<url>', 'GitHub URL of the folder to clone')
     .option('-o, --output <directory>', 'Output directory', process.cwd())
