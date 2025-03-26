@@ -4,7 +4,7 @@
 
 [![NPM version](https://img.shields.io/npm/v/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
 [![License](https://img.shields.io/npm/l/git-ripper.svg)](https://github.com/sairajB/git-ripper/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/npm/dm/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
+[![Downloads](https://img.shields.io/npm/dt/git-ripper.svg?style=flat&label=total%20downloads)](https://www.npmjs.com/package/git-ripper)
 [![GitHub issues](https://img.shields.io/github/issues/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/issues)
 [![GitHub stars](https://img.shields.io/github/stars/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/stargazers)
 
