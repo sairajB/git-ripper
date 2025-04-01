@@ -5,6 +5,8 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import cliProgress from "cli-progress";
 import pLimit from "p-limit";
+import chalk from "chalk";
+import prettyBytes from "pretty-bytes";
 
 // Set concurrency limit (adjustable based on network performance)
 const limit = pLimit(500);
@@ -12,6 +14,27 @@ const limit = pLimit(500);
 // Ensure __dirname and __filename are available in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Define spinner animation frames
+const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+// Alternative progress bar characters for more visual appeal
+const progressChars = {
+  complete: '▰', // Alternative: '■', '●', '◆', '▣'
+  incomplete: '▱', // Alternative: '□', '○', '◇', '▢'
+};
+
+// Track frame index for spinner animation
+let spinnerFrameIndex = 0;
+
+/**
+ * Returns the next spinner frame for animation
+ * @returns {string} - The spinner character
+ */
+const getSpinnerFrame = () => {
+  const frame = spinnerFrames[spinnerFrameIndex];
+  spinnerFrameIndex = (spinnerFrameIndex + 1) % spinnerFrames.length;
+  return frame;
+};
 
 /**
  * Fetches the contents of a folder from a GitHub repository
@@ -53,10 +76,66 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
     const response = await axios.get(url, { responseType: "arraybuffer" });
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, Buffer.from(response.data));
-    return { filePath, success: true };
+    return { 
+      filePath, 
+      success: true,
+      size: response.data.length
+    };
   } catch (error) {
-    return { filePath, success: false, error: error.message };
+    return { 
+      filePath, 
+      success: false, 
+      error: error.message,
+      size: 0
+    };
   }
+};
+
+/**
+ * Creates a simplified progress bar renderer with animation
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} folderPath - Path to the folder
+ * @returns {Function} - Function to render progress bar
+ */
+const createProgressRenderer = (owner, repo, folderPath) => {
+  // Default terminal width
+  const terminalWidth = process.stdout.columns || 80;
+
+  return (options, params, payload) => {
+    try {
+      const { value, total, startTime } = params;
+      const { downloadedSize = 0 } = payload || { downloadedSize: 0 };
+      
+      // Calculate progress percentage
+      const progress = Math.min(1, Math.max(0, value / Math.max(1, total)));
+      const percentage = Math.floor(progress * 100);
+      
+      // Calculate elapsed time
+      const elapsedSecs = Math.max(0.1, (Date.now() - startTime) / 1000);
+      
+      // Create the progress bar
+      const barLength = Math.max(20, Math.min(40, Math.floor(terminalWidth / 2)));
+      const completedLength = Math.round(barLength * progress);
+      const remainingLength = barLength - completedLength;
+      
+      // Build the bar with custom progress characters
+      const completedBar = chalk.greenBright(progressChars.complete.repeat(completedLength));
+      const remainingBar = chalk.gray(progressChars.incomplete.repeat(remainingLength));
+      
+      // Add spinner for animation
+      const spinner = chalk.cyanBright(getSpinnerFrame());
+      
+      // Format the output
+      const progressInfo = `${chalk.cyan(`${value}/${total}`)} files`;
+      const sizeInfo = prettyBytes(downloadedSize || 0);
+      
+      return `${spinner} ${completedBar}${remainingBar} ${chalk.yellow(percentage + '%')} | ${progressInfo} | ${chalk.magenta(sizeInfo)}`;
+    } catch (error) {
+      // Fallback to a very simple progress indicator
+      return `${Math.floor((params.value / params.total) * 100)}% complete`;
+    }
+  };
 };
 
 /**
@@ -70,47 +149,91 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
  * @returns {Promise<void>} - Promise that resolves when all files are downloaded
  */
 const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) => {
-  console.log(`Cloning ${folderPath} from ${owner}/${repo} (${branch})...`);
+  console.log(chalk.cyan(`Analyzing repository structure for ${owner}/${repo}...`));
 
-  const contents = await fetchFolderContents(owner, repo, branch, folderPath);
-  
-  if (contents.length === 0) {
-    console.log(`No files found in ${folderPath}`);
-    return;
-  }
+  try {
+    const contents = await fetchFolderContents(owner, repo, branch, folderPath);
+    
+    if (!contents || contents.length === 0) {
+      console.log(chalk.yellow(`No files found in ${folderPath || 'repository root'}`));
+      console.log(chalk.green(`Folder cloned successfully!`));
+      return;
+    }
 
-  let totalFiles = contents.filter(item => item.type === "blob").length;
-  console.log(`Preparing to download ${totalFiles} files/folders...`);
-  
-  // Progress bar setup
-  const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-  bar.start(totalFiles, 0);
-
-  // Create download promises with concurrency control
-  const fileDownloadPromises = contents
-    .filter((item) => item.type === "blob")
-    .map((item) => {
+    const files = contents.filter(item => item.type === "blob");
+    const totalFiles = files.length;
+    
+    console.log(chalk.cyan(`Downloading ${totalFiles} files from ${chalk.white(owner + '/' + repo)}...`));
+    
+    // Simplified progress bar setup
+    const progressBar = new cliProgress.SingleBar({
+      format: createProgressRenderer(owner, repo, folderPath),
+      hideCursor: true,
+      clearOnComplete: false,
+      stopOnComplete: true,
+      forceRedraw: true
+    });
+    
+    // Track download metrics
+    let downloadedSize = 0;
+    const startTime = Date.now();
+    
+    // Start progress bar
+    progressBar.start(totalFiles, 0, {
+      downloadedSize: 0,
+      startTime
+    });
+    
+    // Create download promises with concurrency control
+    const fileDownloadPromises = files.map((item) => {
       // Keep the original structure by preserving the folder name
-      // For a path like "src/components/Button.js" relative to "src", store as "components/Button.js"
-      const relativePath = item.path.substring(folderPath.length).replace(/^\//, "");
+      let relativePath = item.path;
+      if (folderPath && folderPath.trim() !== '') {
+        relativePath = item.path.substring(folderPath.length).replace(/^\//, "");
+      }
       const outputFilePath = path.join(outputDir, relativePath);
       
       return limit(async () => {
-        const result = await downloadFile(owner, repo, branch, item.path, outputFilePath);
-        bar.increment(); // Update progress bar
-        return result;
+        try {
+          const result = await downloadFile(owner, repo, branch, item.path, outputFilePath);
+          
+          // Update progress metrics
+          if (result.success) {
+            downloadedSize += (result.size || 0);
+          }
+          
+          // Update progress bar with current metrics
+          progressBar.increment(1, {
+            downloadedSize
+          });
+          
+          return result;
+        } catch (error) {
+          return { filePath: item.path, success: false, error: error.message, size: 0 };
+        }
       });
     });
 
-  // Execute downloads in parallel
-  const results = await Promise.all(fileDownloadPromises);
-  bar.stop(); // Stop progress bar
+    // Execute downloads in parallel
+    const results = await Promise.all(fileDownloadPromises);
+    progressBar.stop();
+    
+    console.log(); // Add an empty line after progress bar
 
-  // Count successful and failed downloads
-  const succeeded = results.filter((r) => r.success).length;
-  const failed = results.filter((r) => !r.success).length;
+    // Count successful and failed downloads
+    const succeeded = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
 
-  console.log(`Downloaded ${succeeded} files successfully${failed > 0 ? `, ${failed} files failed` : ""}`);
+    if (failed > 0) {
+      console.log(chalk.yellow(`Downloaded ${succeeded} files successfully, ${failed} files failed`));
+    } else {
+      console.log(chalk.green(` All ${succeeded} files downloaded successfully!`));
+    }
+    
+    console.log(chalk.green(`Folder cloned successfully!`));
+  } catch (error) {
+    console.error(chalk.red(`Error downloading folder: ${error.message}`));
+  }
 };
 
 // Export functions in ESM format
