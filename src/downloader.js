@@ -9,7 +9,8 @@ import chalk from "chalk";
 import prettyBytes from "pretty-bytes";
 
 // Set concurrency limit (adjustable based on network performance)
-const limit = pLimit(500);
+// Reduced from 500 to 5 to prevent GitHub API rate limiting
+const limit = pLimit(5);
 
 // Ensure __dirname and __filename are available in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -49,13 +50,42 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
 
   try {
     const response = await axios.get(apiUrl);
+    
+    // Check if GitHub API returned truncated results
+    if (response.data.truncated) {
+      console.warn(chalk.yellow(
+        `Warning: The repository is too large and some files may be missing. ` +
+        `Consider using git clone for complete repositories.`
+      ));
+    }
+    
     return response.data.tree.filter((item) => item.path.startsWith(folderPath));
   } catch (error) {
-    if (error.response && error.response.status === 404) {
-      console.error(`Repository, branch, or folder not found: ${owner}/${repo}/${branch}/${folderPath}`);
-      return [];
+    if (error.response) {
+      // Handle specific HTTP error codes
+      switch(error.response.status) {
+        case 403:
+          if (error.response.headers['x-ratelimit-remaining'] === '0') {
+            console.error(chalk.red(
+              `GitHub API rate limit exceeded. Please wait until ${
+                new Date(parseInt(error.response.headers['x-ratelimit-reset']) * 1000).toLocaleTimeString()
+              } or add a GitHub token (feature coming soon).`
+            ));
+          } else {
+            console.error(chalk.red(`Access forbidden: ${error.response.data.message || 'Unknown reason'}`));
+          }
+          break;
+        case 404:
+          console.error(chalk.red(`Repository, branch, or folder not found: ${owner}/${repo}/${branch}/${folderPath}`));
+          break;
+        default:
+          console.error(chalk.red(`API error (${error.response.status}): ${error.response.data.message || error.message}`));
+      }
+    } else if (error.request) {
+      console.error(chalk.red(`Network error: No response received from GitHub. Please check your internet connection.`));
+    } else {
+      console.error(chalk.red(`Error preparing request: ${error.message}`));
     }
-    console.error(`Failed to fetch folder contents: ${error.message}`);
     return [];
   }
 };
@@ -74,18 +104,61 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
 
   try {
     const response = await axios.get(url, { responseType: "arraybuffer" });
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    fs.writeFileSync(outputPath, Buffer.from(response.data));
+    
+    // Ensure the directory exists
+    try {
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    } catch (dirError) {
+      return { 
+        filePath, 
+        success: false, 
+        error: `Failed to create directory: ${dirError.message}`,
+        size: 0
+      };
+    }
+    
+    // Write the file
+    try {
+      fs.writeFileSync(outputPath, Buffer.from(response.data));
+    } catch (fileError) {
+      return { 
+        filePath, 
+        success: false, 
+        error: `Failed to write file: ${fileError.message}`,
+        size: 0
+      };
+    }
+    
     return { 
       filePath, 
       success: true,
       size: response.data.length
     };
   } catch (error) {
+    // More detailed error handling for network requests
+    let errorMessage = error.message;
+    
+    if (error.response) {
+      // The request was made and the server responded with an error status
+      switch (error.response.status) {
+        case 403:
+          errorMessage = "Access forbidden (possibly rate limited)";
+          break;
+        case 404:
+          errorMessage = "File not found";
+          break;
+        default:
+          errorMessage = `HTTP error ${error.response.status}`;
+      }
+    } else if (error.request) {
+      // The request was made but no response was received
+      errorMessage = "No response from server";
+    }
+    
     return { 
       filePath, 
       success: false, 
-      error: error.message,
+      error: errorMessage,
       size: 0
     };
   }
@@ -160,8 +233,15 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
       return;
     }
 
+    // Filter for blob type (files)
     const files = contents.filter(item => item.type === "blob");
     const totalFiles = files.length;
+    
+    if (totalFiles === 0) {
+      console.log(chalk.yellow(`No files found in ${folderPath || 'repository root'} (only directories)`));
+      console.log(chalk.green(`Folder cloned successfully!`));
+      return;
+    }
     
     console.log(chalk.cyan(`Downloading ${totalFiles} files from ${chalk.white(owner + '/' + repo)}...`));
     
@@ -177,6 +257,7 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
     // Track download metrics
     let downloadedSize = 0;
     const startTime = Date.now();
+    let failedFiles = [];
     
     // Start progress bar
     progressBar.start(totalFiles, 0, {
@@ -200,6 +281,12 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
           // Update progress metrics
           if (result.success) {
             downloadedSize += (result.size || 0);
+          } else {
+            // Track failed files for reporting
+            failedFiles.push({
+              path: item.path,
+              error: result.error
+            });
           }
           
           // Update progress bar with current metrics
@@ -209,12 +296,18 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
           
           return result;
         } catch (error) {
+          failedFiles.push({
+            path: item.path,
+            error: error.message
+          });
+          
+          progressBar.increment(1, { downloadedSize });
           return { filePath: item.path, success: false, error: error.message, size: 0 };
         }
       });
     });
 
-    // Execute downloads in parallel
+    // Execute downloads in parallel with controlled concurrency
     const results = await Promise.all(fileDownloadPromises);
     progressBar.stop();
     
@@ -222,10 +315,20 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
 
     // Count successful and failed downloads
     const succeeded = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
+    const failed = failedFiles.length;
 
     if (failed > 0) {
       console.log(chalk.yellow(`Downloaded ${succeeded} files successfully, ${failed} files failed`));
+      
+      // Show detailed errors if there aren't too many
+      if (failed <= 5) {
+        console.log(chalk.yellow('Failed files:'));
+        failedFiles.forEach(file => {
+          console.log(chalk.yellow(`  - ${file.path}: ${file.error}`));
+        });
+      } else {
+        console.log(chalk.yellow(`${failed} files failed to download. Check your connection or repository access.`));
+      }
     } else {
       console.log(chalk.green(` All ${succeeded} files downloaded successfully!`));
     }

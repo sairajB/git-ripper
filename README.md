@@ -31,6 +31,7 @@ Have you ever needed just a single component from a massive repository? Or wante
 - **Directory Structure**: Preserves complete folder structure
 - **Custom Output**: Specify your preferred output directory
 - **Branch Support**: Works with any branch, not just the default one
+- **Archive Export**: Create ZIP or TAR archives of downloaded content
 - **Simple Interface**: Clean, intuitive command-line experience
 - **Lightweight**: Minimal dependencies and fast execution
 - **No Authentication**: Works with public repositories without requiring credentials
@@ -67,11 +68,26 @@ git-ripper https://github.com/username/repository/tree/branch/folder
 git-ripper https://github.com/username/repository/tree/branch/folder -o ./my-output-folder
 ```
 
+### Creating ZIP Archive
+
+```bash
+git-ripper https://github.com/username/repository/tree/branch/folder --zip
+```
+
+### Creating TAR Archive with Custom Name
+
+```bash
+git-ripper https://github.com/username/repository/tree/branch/folder --tar="my-archive.tar"
+```
+
 ### Command Line Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-o, --output <directory>` | Specify output directory | Current directory |
+| `--zip [filename]` | Create ZIP archive of downloaded content | - |
+| `--tar [filename]` | Create TAR archive of downloaded content | - |
+| `--compression-level <level>` | Set compression level (1-9) | 6 |
 | `-V, --version` | Show version number | - |
 | `-h, --help` | Show help | - |
 
@@ -105,6 +121,16 @@ git-ripper https://github.com/nodejs/node/tree/main/doc -o ./node-docs
 git-ripper https://github.com/tailwindlabs/tailwindcss/tree/master/src/components -o ./tailwind-components
 ```
 
+### Download and Create Archive
+
+```bash
+# Download React DOM package and create a ZIP archive
+git-ripper https://github.com/facebook/react/tree/main/packages/react-dom --zip
+
+# Extract VS Code build configuration with maximum compression
+git-ripper https://github.com/microsoft/vscode/tree/main/build --tar --compression-level=9
+```
+
 ## How It Works
 
 Git-ripper operates in four stages:
@@ -112,7 +138,7 @@ Git-ripper operates in four stages:
 1. **URL Parsing**: Extracts repository owner, name, branch, and target folder path
 2. **API Request**: Uses GitHub's API to fetch the folder structure
 3. **Content Download**: Retrieves each file individually while maintaining directory structure
-4. **Local Storage**: Saves files to your specified output directory
+4. **Local Storage or Archiving**: Saves files to your specified output directory or creates an archive
 
 ## Configuration
 
@@ -160,6 +186,7 @@ See the [open issues](https://github.com/sairajB/git-ripper/issues) for a list o
 
 ## Roadmap
 
+- [x] Add archive export options (ZIP/TAR)
 - [ ] Add GitHub token authentication
 - [ ] Support for GitLab and Bitbucket repositories
 - [ ] Download from specific commits or tags
