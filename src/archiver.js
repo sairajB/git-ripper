@@ -46,19 +46,17 @@ const validateArchivePath = (outputPath) => {
 };
 
 /**
- * Creates an archive (zip or tar) from a directory
+ * Creates a ZIP archive from a directory with standard compression
  *
  * @param {string} sourceDir - Source directory to archive
  * @param {string} outputPath - Path where the archive should be saved
- * @param {object} options - Archive options
- * @param {string} options.format - Archive format ('zip' or 'tar')
- * @param {number} options.compressionLevel - Compression level (0-9, default: 6)
  * @returns {Promise<string>} - Path to the created archive
  */
-export const createArchive = (sourceDir, outputPath, options = {}) => {
+export const createArchive = (sourceDir, outputPath) => {
   return new Promise((resolve, reject) => {
     try {
-      const { format = "zip", compressionLevel = 6 } = options;
+      // Fixed compression level of 5 (balanced between speed and size)
+      const compressionLevel = 5;
 
       // Validate source directory
       if (!fs.existsSync(sourceDir)) {
@@ -79,27 +77,11 @@ export const createArchive = (sourceDir, outputPath, options = {}) => {
 
       // Create output stream
       const output = fs.createWriteStream(outputPath);
-      let archive;
 
-      // Create the appropriate archive type
-      if (format === "zip") {
-        archive = archiver("zip", {
-          zlib: { level: compressionLevel },
-        });
-      } else if (format === "tar") {
-        // Use gzip compression for tar if compressionLevel > 0
-        if (compressionLevel > 0) {
-          archive = archiver("tar", {
-            gzip: true,
-            gzipOptions: { level: compressionLevel },
-          });
-        } else {
-          // Create a tar archive without gzip compression
-          archive = archiver("tar");
-        }
-      } else {
-        return reject(new Error(`Unsupported archive format: ${format}`));
-      }
+      // Create ZIP archive with standard compression
+      const archive = archiver("zip", {
+        zlib: { level: compressionLevel },
+      });
 
       // Listen for archive events
       output.on("close", () => {
@@ -141,28 +123,22 @@ export const createArchive = (sourceDir, outputPath, options = {}) => {
 };
 
 /**
- * Downloads folder contents and creates an archive
+ * Downloads folder contents and creates a ZIP archive
  *
  * @param {object} repoInfo - Repository information object
  * @param {string} outputDir - Directory where files should be downloaded
- * @param {string} archiveFormat - Archive format ('zip' or 'tar')
- * @param {string} archiveName - Custom name for the archive file
- * @param {number} compressionLevel - Compression level (0-9)
+ * @param {string} archiveName - Custom name for the archive file (optional)
  * @returns {Promise<string>} - Path to the created archive
  */
 export const downloadAndArchive = async (
   repoInfo,
   outputDir,
-  archiveFormat = "zip",
-  archiveName = null,
-  compressionLevel = 6
+  archiveName = null
 ) => {
   const { downloadFolder } = await import("./downloader.js");
 
   console.log(
-    chalk.cyan(
-      `Downloading folder and preparing to create ${archiveFormat.toUpperCase()} archive...`
-    )
+    chalk.cyan(`Downloading folder and preparing to create ZIP archive...`)
   );
 
   // Create a temporary directory for the download
@@ -182,20 +158,15 @@ export const downloadAndArchive = async (
     }
 
     // Add extension if not present
-    if (!archiveFileName.endsWith(`.${archiveFormat}`)) {
-      archiveFileName += `.${archiveFormat}`;
+    if (!archiveFileName.endsWith(`.zip`)) {
+      archiveFileName += `.zip`;
     }
 
     const archivePath = path.join(outputDir, archiveFileName);
 
     // Create the archive
-    console.log(
-      chalk.cyan(`Creating ${archiveFormat.toUpperCase()} archive...`)
-    );
-    await createArchive(tempDir, archivePath, {
-      format: archiveFormat,
-      compressionLevel,
-    });
+    console.log(chalk.cyan(`Creating ZIP archive...`));
+    await createArchive(tempDir, archivePath);
 
     return archivePath;
   } catch (error) {

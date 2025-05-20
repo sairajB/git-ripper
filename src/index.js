@@ -59,29 +59,10 @@ const initializeCLI = () => {
     .argument("<url>", "GitHub URL of the folder to clone")
     .option("-o, --output <directory>", "Output directory", process.cwd())
     .option("--zip [filename]", "Create ZIP archive of downloaded files")
-    .option("--tar [filename]", "Create TAR archive of downloaded files")
-    .option("--compression-level <level>", "Compression level (1-9)", "6")
     .action(async (url, options) => {
       try {
         console.log(`Parsing URL: ${url}`);
         const parsedUrl = parseGitHubUrl(url);
-
-        // Validate options
-        if (options.compressionLevel) {
-          const level = parseInt(options.compressionLevel, 10);
-          if (isNaN(level) || level < 0 || level > 9) {
-            // Allow 0 for no compression
-            throw new Error(
-              "Compression level must be a number between 0 and 9"
-            );
-          }
-        }
-
-        if (options.zip && options.tar) {
-          throw new Error(
-            "Cannot specify both --zip and --tar options at the same time"
-          );
-        }
 
         // Validate output directory
         try {
@@ -90,25 +71,14 @@ const initializeCLI = () => {
           throw new Error(`Output directory error: ${dirError.message}`);
         }
 
-        // Handle archive options
-        const archiveFormat = options.zip ? "zip" : options.tar ? "tar" : null;
+        // Handle archive option
+        const createArchive = options.zip !== undefined;
         const archiveName =
-          typeof options.zip === "string"
-            ? options.zip
-            : typeof options.tar === "string"
-            ? options.tar
-            : null;
-        const compressionLevel = parseInt(options.compressionLevel, 10) || 6;
+          typeof options.zip === "string" ? options.zip : null;
 
-        if (archiveFormat) {
-          console.log(`Creating ${archiveFormat.toUpperCase()} archive...`);
-          await downloadAndArchive(
-            parsedUrl,
-            options.output,
-            archiveFormat,
-            archiveName,
-            compressionLevel
-          );
+        if (createArchive) {
+          console.log(`Creating ZIP archive...`);
+          await downloadAndArchive(parsedUrl, options.output, archiveName);
         } else {
           console.log(`Downloading folder to: ${options.output}`);
           await downloadFolder(parsedUrl, options.output);
