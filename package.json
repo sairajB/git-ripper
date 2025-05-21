@@ -1,60 +1,66 @@
 {
-    "name": "git-ripper",
-    "version": "1.4.0",
-    "description": "CLI tool that lets you download specific folders from GitHub repositories without cloning the entire repo.",
-    "main": "src/index.js",
-    "type": "module",
-    "bin": {
-        "git-ripper": "./bin/git-ripper.js"
-    },
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "node bin/git-ripper.js",
-        "lint": "eslint ."
-    },
-    "keywords": [
-        "git",
-        "clone",
-        "github",
-        "subfolder",
-        "repository",
-        "download",
-        "partial-clone",
-        "directory-download",
-        "folder-download",
-        "git-utilities",
-        "github-api",
-        "monorepo-tools",
-        "sparse-checkout"
-    ],
-    "author": "sairajb",
-    "license": "MIT",
-    "dependencies": {
-        "archiver": "^6.0.1",
-        "axios": "^1.6.7",
-        "chalk": "^5.3.0",
-        "cli-progress": "^3.12.0",
-        "commander": "^12.0.0",
-        "p-limit": "^6.2.0",
-        "pretty-bytes": "^6.1.1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/sairajB/git-ripper.git"
-    },
-    "bugs": {
-        "url": "https://github.com/sairajB/git-ripper/issues"
-    },
-    "homepage": "https://github.com/sairajB/git-ripper",
-    "engines": {
-        "node": ">=14.0.0"
-    },
-    "files": [
-        "bin/",
-        "src/",
-        "LICENSE"
-    ],
-    "publishConfig": {
-        "access": "public"
-    }
+  "name": "git-ripper",
+  "version": "1.4.2",
+  "description": "CLI tool that lets you download specific folders from GitHub repositories without cloning the entire repo.",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "git-ripper": "bin/git-ripper.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node bin/git-ripper.js",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "git",
+    "clone",
+    "github",
+    "subfolder",
+    "repository",
+    "download",
+    "partial-clone",
+    "directory-download",
+    "folder-download",
+    "git-utilities",
+    "github-api",
+    "monorepo-tools",
+    "sparse-checkout"
+  ],
+  "author": "sairajb",
+  "license": "MIT",
+  "imports": {
+    "#ansi-styles": "ansi-styles",
+    "#supports-color": "supports-color"
+  },
+  "dependencies": {
+    "ansi-styles": "^6.2.1",
+    "archiver": "^6.0.1",
+    "axios": "^1.6.7",
+    "chalk": "^5.3.0",
+    "cli-progress": "^3.12.0",
+    "commander": "^12.0.0",
+    "p-limit": "^6.2.0",
+    "pretty-bytes": "^6.1.1",
+    "supports-color": "^9.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sairajB/git-ripper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sairajB/git-ripper/issues"
+  },
+  "homepage": "https://github.com/sairajB/git-ripper",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
