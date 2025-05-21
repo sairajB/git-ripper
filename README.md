@@ -29,17 +29,6 @@
 
 Have you ever needed just a single component from a massive repository? Or wanted to reference a specific configuration directory without downloading gigabytes of code? Git-ripper solves this problem by letting you extract and download only the folders you need, saving bandwidth, time, and disk space.
 
-## Project Stats
-
-Git-ripper has grown to become a trusted tool in the developer ecosystem:
-
-- **Total Downloads**: Thousands of developers worldwide have downloaded Git-ripper to optimize their workflow and save time when working with large repositories.
-- **Weekly Active Users**: Our weekly download statistics show consistent adoption and usage among developers, indicating the tool's reliability and usefulness.
-- **Minimal Bundle Size**: Git-ripper is designed to be lightweight and efficient, with a minimal bundle size that ensures quick installation and minimal impact on your system resources.
-- **Active Maintenance**: The project is actively maintained with regular updates and improvements, ensuring compatibility with the latest GitHub API changes and addressing user feedback.
-- **Community Support**: With growing stars and forks on GitHub, Git-ripper has built a supportive community of users who contribute to its ongoing development and share their success stories.
-- **Enterprise Adoption**: Used by teams in various organizations, from startups to large enterprises, Git-ripper helps development teams streamline their workflows when working with modular components from large codebases.
-
 ## Features
 
 - **Selective Downloads**: Fetch specific folders instead of entire repositories
