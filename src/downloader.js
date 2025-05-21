@@ -17,11 +17,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Define spinner animation frames
-const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 // Alternative progress bar characters for more visual appeal
 const progressChars = {
-  complete: '▰', // Alternative: '■', '●', '◆', '▣'
-  incomplete: '▱', // Alternative: '□', '○', '◇', '▢'
+  complete: "▰", // Alternative: '■', '●', '◆', '▣'
+  incomplete: "▱", // Alternative: '□', '○', '◇', '▢'
 };
 
 // Track frame index for spinner animation
@@ -46,43 +46,112 @@ const getSpinnerFrame = () => {
  * @returns {Promise<Array>} - Promise resolving to an array of file objects
  */
 const fetchFolderContents = async (owner, repo, branch, folderPath) => {
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`;
+  let effectiveBranch = branch;
+  if (!effectiveBranch) {
+    // If no branch is specified, fetch the default branch for the repository
+    try {
+      const repoInfoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+      const repoInfoResponse = await axios.get(repoInfoUrl);
+      effectiveBranch = repoInfoResponse.data.default_branch;
+      if (!effectiveBranch) {
+        console.error(
+          chalk.red(
+            `Could not determine default branch for ${owner}/${repo}. Please specify a branch in the URL.`
+          )
+        );
+        return [];
+      }
+      console.log(
+        chalk.blue(
+          `No branch specified, using default branch: ${effectiveBranch}`
+        )
+      );
+    } catch (error) {
+      console.error(
+        chalk.red(
+          `Failed to fetch default branch for ${owner}/${repo}: ${error.message}`
+        )
+      );
+      return [];
+    }
+  }
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${effectiveBranch}?recursive=1`;
 
   try {
     const response = await axios.get(apiUrl);
-    
+
     // Check if GitHub API returned truncated results
     if (response.data.truncated) {
-      console.warn(chalk.yellow(
-        `Warning: The repository is too large and some files may be missing. ` +
-        `Consider using git clone for complete repositories.`
-      ));
+      console.warn(
+        chalk.yellow(
+          `Warning: The repository is too large and some files may be missing. ` +
+            `Consider using git clone for complete repositories.`
+        )
+      );
     }
-    
-    return response.data.tree.filter((item) => item.path.startsWith(folderPath));
+
+    // Original filter:
+    // return response.data.tree.filter((item) =>
+    //   item.path.startsWith(folderPath)
+    // );
+
+    // New filter logic:
+    if (folderPath === "") {
+      // For the root directory, all items from the recursive tree are relevant.
+      // item.path.startsWith("") would also achieve this.
+      return response.data.tree;
+    } else {
+      // For a specific folder, items must be *inside* that folder.
+      // Ensure folderPath is treated as a directory prefix by adding a trailing slash if not present.
+      const prefix = folderPath.endsWith("/") ? folderPath : folderPath + "/";
+      return response.data.tree.filter((item) => item.path.startsWith(prefix));
+    }
   } catch (error) {
     if (error.response) {
       // Handle specific HTTP error codes
-      switch(error.response.status) {
+      switch (error.response.status) {
         case 403:
-          if (error.response.headers['x-ratelimit-remaining'] === '0') {
-            console.error(chalk.red(
-              `GitHub API rate limit exceeded. Please wait until ${
-                new Date(parseInt(error.response.headers['x-ratelimit-reset']) * 1000).toLocaleTimeString()
-              } or add a GitHub token (feature coming soon).`
-            ));
+          if (error.response.headers["x-ratelimit-remaining"] === "0") {
+            console.error(
+              chalk.red(
+                `GitHub API rate limit exceeded. Please wait until ${new Date(
+                  parseInt(error.response.headers["x-ratelimit-reset"]) * 1000
+                ).toLocaleTimeString()} or add a GitHub token (feature coming soon).`
+              )
+            );
           } else {
-            console.error(chalk.red(`Access forbidden: ${error.response.data.message || 'Unknown reason'}`));
+            console.error(
+              chalk.red(
+                `Access forbidden: ${
+                  error.response.data.message || "Unknown reason"
+                }`
+              )
+            );
           }
           break;
         case 404:
-          console.error(chalk.red(`Repository, branch, or folder not found: ${owner}/${repo}/${branch}/${folderPath}`));
+          console.error(
+            chalk.red(
+              `Repository, branch, or folder not found: ${owner}/${repo}/${branch}/${folderPath}`
+            )
+          );
           break;
         default:
-          console.error(chalk.red(`API error (${error.response.status}): ${error.response.data.message || error.message}`));
+          console.error(
+            chalk.red(
+              `API error (${error.response.status}): ${
+                error.response.data.message || error.message
+              }`
+            )
+          );
       }
     } else if (error.request) {
-      console.error(chalk.red(`Network error: No response received from GitHub. Please check your internet connection.`));
+      console.error(
+        chalk.red(
+          `Network error: No response received from GitHub. Please check your internet connection.`
+        )
+      );
     } else {
       console.error(chalk.red(`Error preparing request: ${error.message}`));
     }
@@ -100,44 +169,81 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
  * @returns {Promise<Object>} - Object containing download status
  */
 const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
-  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+  let effectiveBranch = branch;
+  if (!effectiveBranch) {
+    // If no branch is specified, fetch the default branch for the repository
+    // This check might be redundant if fetchFolderContents already resolved it,
+    // but it's a good fallback for direct downloadFile calls if any.
+    try {
+      const repoInfoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+      const repoInfoResponse = await axios.get(repoInfoUrl);
+      effectiveBranch = repoInfoResponse.data.default_branch;
+      if (!effectiveBranch) {
+        // console.error(chalk.red(`Could not determine default branch for ${owner}/${repo} for file ${filePath}.`));
+        // Do not log error here as it might be a root file download where branch is not in URL
+      }
+    } catch (error) {
+      // console.error(chalk.red(`Failed to fetch default branch for ${owner}/${repo} for file ${filePath}: ${error.message}`));
+      // Do not log error here
+    }
+    // If still no branch, the raw URL might work for default branch, or fail.
+    // The original code didn't explicitly handle this for downloadFile, relying on raw.githubusercontent default behavior.
+    // For robustness, we should ensure effectiveBranch is set. If not, the URL will be malformed or use GitHub's default.
+    if (!effectiveBranch) {
+      // Fallback to a common default, or let the API call fail if truly ambiguous
+      // For raw content, GitHub often defaults to the main branch if not specified,
+      // but it's better to be explicit if we can.
+      // However, altering the URL structure for raw.githubusercontent.com without a branch
+      // might be tricky if the original URL didn't have it.
+      // The existing raw URL construction assumes branch is present or GitHub handles its absence.
+      // Let's stick to the original logic for raw URL construction if branch is not found,
+      // as `https://raw.githubusercontent.com/${owner}/${repo}/${filePath}` might work for root files on default branch.
+      // The critical part is `fetchFolderContents` determining the branch for listing.
+    }
+  }
+
+  const baseUrl = `https://raw.githubusercontent.com/${owner}/${repo}`;
+  const fileUrlPath = effectiveBranch
+    ? `/${effectiveBranch}/${filePath}`
+    : `/${filePath}`; // filePath might be at root
+  const url = `${baseUrl}${fileUrlPath}`;
 
   try {
     const response = await axios.get(url, { responseType: "arraybuffer" });
-    
+
     // Ensure the directory exists
     try {
       fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     } catch (dirError) {
-      return { 
-        filePath, 
-        success: false, 
+      return {
+        filePath,
+        success: false,
         error: `Failed to create directory: ${dirError.message}`,
-        size: 0
+        size: 0,
       };
     }
-    
+
     // Write the file
     try {
       fs.writeFileSync(outputPath, Buffer.from(response.data));
     } catch (fileError) {
-      return { 
-        filePath, 
-        success: false, 
+      return {
+        filePath,
+        success: false,
         error: `Failed to write file: ${fileError.message}`,
-        size: 0
+        size: 0,
       };
     }
-    
-    return { 
-      filePath, 
+
+    return {
+      filePath,
       success: true,
-      size: response.data.length
+      size: response.data.length,
     };
   } catch (error) {
     // More detailed error handling for network requests
     let errorMessage = error.message;
-    
+
     if (error.response) {
       // The request was made and the server responded with an error status
       switch (error.response.status) {
@@ -154,12 +260,12 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
       // The request was made but no response was received
       errorMessage = "No response from server";
     }
-    
-    return { 
-      filePath, 
-      success: false, 
+
+    return {
+      filePath,
+      success: false,
       error: errorMessage,
-      size: 0
+      size: 0,
     };
   }
 };
@@ -179,31 +285,40 @@ const createProgressRenderer = (owner, repo, folderPath) => {
     try {
       const { value, total, startTime } = params;
       const { downloadedSize = 0 } = payload || { downloadedSize: 0 };
-      
+
       // Calculate progress percentage
       const progress = Math.min(1, Math.max(0, value / Math.max(1, total)));
       const percentage = Math.floor(progress * 100);
-      
+
       // Calculate elapsed time
       const elapsedSecs = Math.max(0.1, (Date.now() - startTime) / 1000);
-      
+
       // Create the progress bar
-      const barLength = Math.max(20, Math.min(40, Math.floor(terminalWidth / 2)));
+      const barLength = Math.max(
+        20,
+        Math.min(40, Math.floor(terminalWidth / 2))
+      );
       const completedLength = Math.round(barLength * progress);
       const remainingLength = barLength - completedLength;
-      
+
       // Build the bar with custom progress characters
-      const completedBar = chalk.greenBright(progressChars.complete.repeat(completedLength));
-      const remainingBar = chalk.gray(progressChars.incomplete.repeat(remainingLength));
-      
+      const completedBar = chalk.greenBright(
+        progressChars.complete.repeat(completedLength)
+      );
+      const remainingBar = chalk.gray(
+        progressChars.incomplete.repeat(remainingLength)
+      );
+
       // Add spinner for animation
       const spinner = chalk.cyanBright(getSpinnerFrame());
-      
+
       // Format the output
       const progressInfo = `${chalk.cyan(`${value}/${total}`)} files`;
       const sizeInfo = prettyBytes(downloadedSize || 0);
-      
-      return `${spinner} ${completedBar}${remainingBar} ${chalk.yellow(percentage + '%')} | ${progressInfo} | ${chalk.magenta(sizeInfo)}`;
+
+      return `${spinner} ${completedBar}${remainingBar} ${chalk.yellow(
+        percentage + "%"
+      )} | ${progressInfo} | ${chalk.magenta(sizeInfo)}`;
     } catch (error) {
       // Fallback to a very simple progress indicator
       return `${Math.floor((params.value / params.total) * 100)}% complete`;
@@ -221,88 +336,120 @@ const createProgressRenderer = (owner, repo, folderPath) => {
  * @param {string} outputDir - Directory where files should be saved
  * @returns {Promise<void>} - Promise that resolves when all files are downloaded
  */
-const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) => {
-  console.log(chalk.cyan(`Analyzing repository structure for ${owner}/${repo}...`));
+const downloadFolder = async (
+  { owner, repo, branch, folderPath },
+  outputDir
+) => {
+  console.log(
+    chalk.cyan(`Analyzing repository structure for ${owner}/${repo}...`)
+  );
 
   try {
     const contents = await fetchFolderContents(owner, repo, branch, folderPath);
-    
+
     if (!contents || contents.length === 0) {
-      console.log(chalk.yellow(`No files found in ${folderPath || 'repository root'}`));
+      console.log(
+        chalk.yellow(`No files found in ${folderPath || "repository root"}`)
+      );
       console.log(chalk.green(`Folder cloned successfully!`));
       return;
     }
 
     // Filter for blob type (files)
-    const files = contents.filter(item => item.type === "blob");
+    const files = contents.filter((item) => item.type === "blob");
     const totalFiles = files.length;
-    
+
     if (totalFiles === 0) {
-      console.log(chalk.yellow(`No files found in ${folderPath || 'repository root'} (only directories)`));
+      console.log(
+        chalk.yellow(
+          `No files found in ${
+            folderPath || "repository root"
+          } (only directories)`
+        )
+      );
       console.log(chalk.green(`Folder cloned successfully!`));
       return;
     }
-    
-    console.log(chalk.cyan(`Downloading ${totalFiles} files from ${chalk.white(owner + '/' + repo)}...`));
-    
+
+    console.log(
+      chalk.cyan(
+        `Downloading ${totalFiles} files from ${chalk.white(
+          owner + "/" + repo
+        )}...`
+      )
+    );
+
     // Simplified progress bar setup
     const progressBar = new cliProgress.SingleBar({
       format: createProgressRenderer(owner, repo, folderPath),
       hideCursor: true,
       clearOnComplete: false,
       stopOnComplete: true,
-      forceRedraw: true
+      forceRedraw: true,
     });
-    
+
     // Track download metrics
     let downloadedSize = 0;
     const startTime = Date.now();
     let failedFiles = [];
-    
+
     // Start progress bar
     progressBar.start(totalFiles, 0, {
       downloadedSize: 0,
-      startTime
+      startTime,
     });
-    
+
     // Create download promises with concurrency control
     const fileDownloadPromises = files.map((item) => {
       // Keep the original structure by preserving the folder name
       let relativePath = item.path;
-      if (folderPath && folderPath.trim() !== '') {
-        relativePath = item.path.substring(folderPath.length).replace(/^\//, "");
+      if (folderPath && folderPath.trim() !== "") {
+        relativePath = item.path
+          .substring(folderPath.length)
+          .replace(/^\//, "");
       }
       const outputFilePath = path.join(outputDir, relativePath);
-      
+
       return limit(async () => {
         try {
-          const result = await downloadFile(owner, repo, branch, item.path, outputFilePath);
-          
+          const result = await downloadFile(
+            owner,
+            repo,
+            branch,
+            item.path,
+            outputFilePath
+          );
+
           // Update progress metrics
           if (result.success) {
-            downloadedSize += (result.size || 0);
+            downloadedSize += result.size || 0;
           } else {
             // Track failed files for reporting
             failedFiles.push({
               path: item.path,
-              error: result.error
+              error: result.error,
             });
           }
-          
+
           // Update progress bar with current metrics
           progressBar.increment(1, {
-            downloadedSize
+            downloadedSize,
           });
-          
+
           return result;
         } catch (error) {
           failedFiles.push({
             path: item.path,
-            error: error.message
+            error: error.message,
           });
-          
+
           progressBar.increment(1, { downloadedSize });
-          return { filePath: item.path, success: false, error: error.message, size: 0 };
+          return {
+            filePath: item.path,
+            success: false,
+            error: error.message,
+            size: 0,
+          };
         }
       });
     });
@@ -310,7 +457,7 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
     // Execute downloads in parallel with controlled concurrency
     const results = await Promise.all(fileDownloadPromises);
     progressBar.stop();
-    
+
     console.log(); // Add an empty line after progress bar
 
     // Count successful and failed downloads
@@ -318,21 +465,31 @@ const downloadFolder = async ({ owner, repo, branch, folderPath }, outputDir) =>
     const failed = failedFiles.length;
 
     if (failed > 0) {
-      console.log(chalk.yellow(`Downloaded ${succeeded} files successfully, ${failed} files failed`));
-      
+      console.log(
+        chalk.yellow(
+          `Downloaded ${succeeded} files successfully, ${failed} files failed`
+        )
+      );
+
       // Show detailed errors if there aren't too many
       if (failed <= 5) {
-        console.log(chalk.yellow('Failed files:'));
-        failedFiles.forEach(file => {
+        console.log(chalk.yellow("Failed files:"));
+        failedFiles.forEach((file) => {
           console.log(chalk.yellow(`  - ${file.path}: ${file.error}`));
         });
       } else {
-        console.log(chalk.yellow(`${failed} files failed to download. Check your connection or repository access.`));
+        console.log(
+          chalk.yellow(
+            `${failed} files failed to download. Check your connection or repository access.`
+          )
+        );
       }
     } else {
-      console.log(chalk.green(` All ${succeeded} files downloaded successfully!`));
+      console.log(
+        chalk.green(` All ${succeeded} files downloaded successfully!`)
+      );
     }
-    
+
     console.log(chalk.green(`Folder cloned successfully!`));
   } catch (error) {
     console.error(chalk.red(`Error downloading folder: ${error.message}`));

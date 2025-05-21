@@ -5,8 +5,12 @@
 [![NPM version](https://img.shields.io/npm/v/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
 [![License](https://img.shields.io/npm/l/git-ripper.svg)](https://github.com/sairajB/git-ripper/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/npm/dt/git-ripper.svg?style=flat&label=total%20downloads)](https://www.npmjs.com/package/git-ripper)
+[![Weekly Downloads](https://img.shields.io/npm/dw/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
+[![Bundle Size](https://img.shields.io/bundlephobia/min/git-ripper.svg)](https://bundlephobia.com/package/git-ripper)
 [![GitHub issues](https://img.shields.io/github/issues/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/issues)
 [![GitHub stars](https://img.shields.io/github/stars/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/network)
+[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)](https://github.com/sairajB/git-ripper/commits/master)
 
 **Download specific folders from GitHub repositories without cloning the entire codebase**
 
@@ -31,12 +35,16 @@ Have you ever needed just a single component from a massive repository? Or wante
 - **Directory Structure**: Preserves complete folder structure
 - **Custom Output**: Specify your preferred output directory
 - **Branch Support**: Works with any branch, not just the default one
-- **Archive Export**: Create ZIP or TAR archives of downloaded content
+- **Archive Export**: Create ZIP archives of downloaded content
 - **Simple Interface**: Clean, intuitive command-line experience
 - **Lightweight**: Minimal dependencies and fast execution
 - **No Authentication**: Works with public repositories without requiring credentials
 
 ## Installation
+
+### Requirements
+
+Git-ripper requires Node.js >=16.0.0 due to its use of modern JavaScript features and built-in Node.js modules.
 
 ### Global Installation (Recommended)
 
@@ -74,22 +82,20 @@ git-ripper https://github.com/username/repository/tree/branch/folder -o ./my-out
 git-ripper https://github.com/username/repository/tree/branch/folder --zip
 ```
 
-### Creating TAR Archive with Custom Name
+### Creating ZIP Archive with Custom Name
 
 ```bash
-git-ripper https://github.com/username/repository/tree/branch/folder --tar="my-archive.tar"
+git-ripper https://github.com/username/repository/tree/branch/folder --zip="my-archive.zip"
 ```
 
 ### Command Line Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-o, --output <directory>` | Specify output directory | Current directory |
-| `--zip [filename]` | Create ZIP archive of downloaded content | - |
-| `--tar [filename]` | Create TAR archive of downloaded content | - |
-| `--compression-level <level>` | Set compression level (1-9) | 6 |
-| `-V, --version` | Show version number | - |
-| `-h, --help` | Show help | - |
+| Option                     | Description                              | Default           |
+| -------------------------- | ---------------------------------------- | ----------------- |
+| `-o, --output <directory>` | Specify output directory                 | Current directory |
+| `--zip [filename]`         | Create ZIP archive of downloaded content | -                 |
+| `-V, --version`            | Show version number                      | -                 |
+| `-h, --help`               | Show help                                | -                 |
 
 ## Examples
 
@@ -127,8 +133,8 @@ git-ripper https://github.com/tailwindlabs/tailwindcss/tree/master/src/component
 # Download React DOM package and create a ZIP archive
 git-ripper https://github.com/facebook/react/tree/main/packages/react-dom --zip
 
-# Extract VS Code build configuration with maximum compression
-git-ripper https://github.com/microsoft/vscode/tree/main/build --tar --compression-level=9
+# Extract VS Code build configuration with custom archive name
+git-ripper https://github.com/microsoft/vscode/tree/main/build --zip="vscode-build.zip"
 ```
 
 ## How It Works
@@ -183,16 +189,6 @@ Contributions make the open-source community an amazing place to learn, inspire,
 5. Open a Pull Request
 
 See the [open issues](https://github.com/sairajB/git-ripper/issues) for a list of proposed features and known issues.
-
-## Roadmap
-
-- [x] Add archive export options (ZIP/TAR)
-- [ ] Add GitHub token authentication
-- [ ] Support for GitLab and Bitbucket repositories
-- [ ] Download from specific commits or tags
-- [ ] Dry run mode
-- [ ] File filtering options
-- [ ] CLI interactive mode
 
 ## License
 
