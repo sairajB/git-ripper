@@ -29,6 +29,10 @@
   ],
   "author": "sairajb",
   "license": "MIT",
+  "imports": {
+    "#ansi-styles": "ansi-styles",
+    "#supports-color": "supports-color"
+  },
   "dependencies": {
     "ansi-styles": "^6.2.1",
     "archiver": "^6.0.1",
@@ -38,7 +42,7 @@
     "commander": "^12.0.0",
     "p-limit": "^6.2.0",
     "pretty-bytes": "^6.1.1",
-    "supports-color": "^9.3.1"
+    "supports-color": "^9.4.0"
   },
   "repository": {
     "type": "git",
