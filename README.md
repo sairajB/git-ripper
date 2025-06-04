@@ -32,10 +32,14 @@ Have you ever needed just a single component from a massive repository? Or wante
 ## Features
 
 - **Selective Downloads**: Fetch specific folders instead of entire repositories
+- **Resume Interrupted Downloads**: Automatically resume downloads that were interrupted or failed
+- **Progress Tracking**: Visual progress indicators with file-by-file download status
+- **File Integrity Verification**: Ensures downloaded files are complete and uncorrupted
 - **Directory Structure**: Preserves complete folder structure
 - **Custom Output**: Specify your preferred output directory
 - **Branch Support**: Works with any branch, not just the default one
 - **Archive Export**: Create ZIP archives of downloaded content
+- **Checkpoint Management**: View and manage saved download progress
 - **Simple Interface**: Clean, intuitive command-line experience
 - **Lightweight**: Minimal dependencies and fast execution
 - **No Authentication**: Works with public repositories without requiring credentials
@@ -94,6 +98,9 @@ git-ripper https://github.com/username/repository/tree/branch/folder --zip="my-a
 | -------------------------- | ---------------------------------------- | ----------------- |
 | `-o, --output <directory>` | Specify output directory                 | Current directory |
 | `--zip [filename]`         | Create ZIP archive of downloaded content | -                 |
+| `--no-resume`              | Disable resume functionality             | -                 |
+| `--force-restart`          | Ignore existing checkpoints and restart  | -                 |
+| `--list-checkpoints`       | List all saved download checkpoints      | -                 |
 | `-V, --version`            | Show version number                      | -                 |
 | `-h, --help`               | Show help                                | -                 |
 
@@ -137,14 +144,67 @@ git-ripper https://github.com/facebook/react/tree/main/packages/react-dom --zip
 git-ripper https://github.com/microsoft/vscode/tree/main/build --zip="vscode-build.zip"
 ```
 
+## Resume Downloads
+
+Git-ripper now supports resuming interrupted downloads, making it perfect for large folders or unstable network connections.
+
+### Automatic Resume (Default Behavior)
+
+```bash
+# Start a download
+git-ripper https://github.com/microsoft/vscode/tree/main/src/vs/workbench
+
+# If interrupted (Ctrl+C, network issues, etc.), simply run the same command again
+git-ripper https://github.com/microsoft/vscode/tree/main/src/vs/workbench
+# It will automatically resume from where it left off
+```
+
+### Force Restart
+
+```bash
+# Ignore any existing progress and start fresh
+git-ripper https://github.com/microsoft/vscode/tree/main/src/vs/workbench --force-restart
+```
+
+### Disable Resume
+
+```bash
+# Use traditional behavior without resume functionality
+git-ripper https://github.com/microsoft/vscode/tree/main/src/vs/workbench --no-resume
+```
+
+### Manage Checkpoints
+
+```bash
+# List all saved download progress
+git-ripper --list-checkpoints
+
+# Output shows:
+# 1. ID: a1b2c3d4
+#    URL: https://github.com/microsoft/vscode/tree/main/src/vs/workbench
+#    Progress: 45/120 files
+#    Last Updated: 2025-06-04T10:30:00Z
+```
+
+### Resume Features
+
+- **Automatic Progress Saving**: Downloads are checkpointed every few files
+- **File Integrity Verification**: Ensures existing files are complete and valid
+- **Smart Recovery**: Detects corrupted or incomplete files and re-downloads them
+- **Multi-Download Support**: Manage multiple concurrent download projects
+- **Progress Indicators**: Visual feedback showing completed vs remaining files
+
 ## How It Works
 
-Git-ripper operates in four stages:
+Git-ripper operates in five stages:
 
 1. **URL Parsing**: Extracts repository owner, name, branch, and target folder path
-2. **API Request**: Uses GitHub's API to fetch the folder structure
-3. **Content Download**: Retrieves each file individually while maintaining directory structure
-4. **Local Storage or Archiving**: Saves files to your specified output directory or creates an archive
+2. **Resume Check**: Looks for existing download progress and validates already downloaded files
+3. **API Request**: Uses GitHub's API to fetch the folder structure
+4. **Content Download**: Retrieves each file individually while maintaining directory structure and saving progress
+5. **Local Storage or Archiving**: Saves files to your specified output directory or creates an archive
+
+The resume functionality uses checkpoint files stored in `.git_ripper_checkpoints/` to track download progress, file integrity hashes, and metadata for each download session.
 
 ## Configuration
 
@@ -177,6 +237,29 @@ Error: Path not found in repository
 ```
 
 **Solution**: Verify the folder path exists in the specified branch and repository.
+
+#### Resume Issues
+
+If you encounter problems with resume functionality:
+
+```bash
+# Clear all checkpoints and start fresh
+git-ripper https://github.com/owner/repo/tree/branch/folder --force-restart
+
+# Or disable resume entirely
+git-ripper https://github.com/owner/repo/tree/branch/folder --no-resume
+```
+
+#### Corrupted Download
+
+If files appear corrupted after resume:
+
+```bash
+# Force restart will re-download everything
+git-ripper https://github.com/owner/repo/tree/branch/folder --force-restart
+```
+
+The resume feature automatically detects and re-downloads corrupted files, but `--force-restart` ensures a completely clean download.
 
 ## Contributing
 
