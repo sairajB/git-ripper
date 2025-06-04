@@ -9,8 +9,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node bin/git-ripper.js",
-    "lint": "eslint ."
+    "dev": "node bin/git-ripper.js"
   },
   "keywords": [
     "git",
@@ -29,10 +28,6 @@
   ],
   "author": "sairajb",
   "license": "MIT",
-  "imports": {
-    "#ansi-styles": "ansi-styles",
-    "#supports-color": "supports-color"
-  },
   "dependencies": {
     "ansi-styles": "^6.2.1",
     "archiver": "^6.0.1",
