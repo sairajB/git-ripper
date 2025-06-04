@@ -7,6 +7,7 @@ import cliProgress from "cli-progress";
 import pLimit from "p-limit";
 import chalk from "chalk";
 import prettyBytes from "pretty-bytes";
+import { ResumeManager } from "./resumeManager.js";
 
 // Set concurrency limit (adjustable based on network performance)
 // Reduced from 500 to 5 to prevent GitHub API rate limiting
@@ -497,4 +498,289 @@ const downloadFolder = async (
 };
 
 // Export functions in ESM format
-export { downloadFolder };
+export { downloadFolder, downloadFolderWithResume };
+
+/**
+ * Downloads all files from a folder in a GitHub repository with resume capability
+ */
+const downloadFolderWithResume = async (
+  { owner, repo, branch, folderPath },
+  outputDir,
+  options = { resume: true, forceRestart: false }
+) => {
+  const { resume = true, forceRestart = false } = options;
+
+  if (!resume) {
+    return downloadFolder({ owner, repo, branch, folderPath }, outputDir);
+  }
+
+  const resumeManager = new ResumeManager();
+  const url = `https://github.com/${owner}/${repo}/tree/${branch || "main"}/${
+    folderPath || ""
+  }`;
+
+  // Clear checkpoint if force restart is requested
+  if (forceRestart) {
+    resumeManager.cleanupCheckpoint(url, outputDir);
+  }
+
+  // Check for existing checkpoint
+  let checkpoint = resumeManager.loadCheckpoint(url, outputDir);
+
+  if (checkpoint) {
+    console.log(
+      chalk.blue(
+        `🔄 Found previous download from ${new Date(
+          checkpoint.timestamp
+        ).toLocaleString()}`
+      )
+    );
+    console.log(
+      chalk.blue(
+        `📊 Progress: ${checkpoint.downloadedFiles.length}/${checkpoint.totalFiles} files completed`
+      )
+    );
+
+    // Verify integrity of existing files
+    const validFiles = [];
+    let corruptedCount = 0;
+
+    for (const filename of checkpoint.downloadedFiles) {
+      const filepath = path.join(outputDir, filename);
+      const expectedHash = checkpoint.fileHashes[filename];
+
+      if (
+        expectedHash &&
+        resumeManager.verifyFileIntegrity(filepath, expectedHash)
+      ) {
+        validFiles.push(filename);
+      } else {
+        corruptedCount++;
+      }
+    }
+
+    checkpoint.downloadedFiles = validFiles;
+    if (corruptedCount > 0) {
+      console.log(
+        chalk.yellow(
+          `🔧 Detected ${corruptedCount} corrupted files, will re-download`
+        )
+      );
+    }
+    console.log(chalk.green(`✅ Verified ${validFiles.length} existing files`));
+  }
+
+  console.log(
+    chalk.cyan(`Analyzing repository structure for ${owner}/${repo}...`)
+  );
+
+  try {
+    const contents = await fetchFolderContents(owner, repo, branch, folderPath);
+
+    if (!contents || contents.length === 0) {
+      console.log(
+        chalk.yellow(`No files found in ${folderPath || "repository root"}`)
+      );
+      console.log(chalk.green(`Folder cloned successfully!`));
+      return;
+    }
+
+    // Filter for blob type (files)
+    const files = contents.filter((item) => item.type === "blob");
+    const totalFiles = files.length;
+
+    if (totalFiles === 0) {
+      console.log(
+        chalk.yellow(
+          `No files found in ${
+            folderPath || "repository root"
+          } (only directories)`
+        )
+      );
+      console.log(chalk.green(`Folder cloned successfully!`));
+      return;
+    }
+
+    // Create new checkpoint if none exists
+    if (!checkpoint) {
+      checkpoint = resumeManager.createNewCheckpoint(
+        url,
+        outputDir,
+        totalFiles
+      );
+      console.log(
+        chalk.cyan(
+          `📥 Starting download of ${totalFiles} files from ${chalk.white(
+            owner + "/" + repo
+          )}...`
+        )
+      );
+    } else {
+      // Update total files in case repository changed
+      checkpoint.totalFiles = totalFiles;
+      console.log(chalk.cyan(`📥 Resuming download...`));
+    }
+
+    // Get remaining files to download
+    const remainingFiles = files.filter((item) => {
+      let relativePath = item.path;
+      if (folderPath && folderPath.trim() !== "") {
+        relativePath = item.path
+          .substring(folderPath.length)
+          .replace(/^\//, "");
+      }
+      return !checkpoint.downloadedFiles.includes(relativePath);
+    });
+
+    if (remainingFiles.length === 0) {
+      console.log(chalk.green(`🎉 All files already downloaded!`));
+      resumeManager.cleanupCheckpoint(url, outputDir);
+      return;
+    }
+
+    console.log(
+      chalk.cyan(`📥 Downloading ${remainingFiles.length} remaining files...`)
+    );
+
+    // Setup progress bar
+    const progressBar = new cliProgress.SingleBar({
+      format: createProgressRenderer(owner, repo, folderPath),
+      hideCursor: true,
+      clearOnComplete: false,
+      stopOnComplete: true,
+      forceRedraw: true,
+    });
+
+    // Calculate already downloaded size
+    let downloadedSize = 0;
+    for (const filename of checkpoint.downloadedFiles) {
+      const filepath = path.join(outputDir, filename);
+      try {
+        downloadedSize += fs.statSync(filepath).size;
+      } catch {
+        // File might be missing, will be re-downloaded
+      }
+    }
+
+    const startTime = Date.now();
+    let failedFiles = [...(checkpoint.failedFiles || [])];
+
+    // Start progress bar with current progress
+    progressBar.start(totalFiles, checkpoint.downloadedFiles.length, {
+      downloadedSize,
+      startTime,
+    });
+
+    // Process remaining files
+    let processedCount = 0;
+    for (const item of remainingFiles) {
+      try {
+        let relativePath = item.path;
+        if (folderPath && folderPath.trim() !== "") {
+          relativePath = item.path
+            .substring(folderPath.length)
+            .replace(/^\//, "");
+        }
+        const outputFilePath = path.join(outputDir, relativePath);
+
+        const result = await downloadFile(
+          owner,
+          repo,
+          branch,
+          item.path,
+          outputFilePath
+        );
+
+        if (result.success) {
+          // Calculate file hash for integrity checking
+          const fileContent = fs.readFileSync(outputFilePath);
+          const fileHash = resumeManager.calculateHash(fileContent);
+
+          // Update checkpoint
+          checkpoint.downloadedFiles.push(relativePath);
+          checkpoint.fileHashes[relativePath] = fileHash;
+          downloadedSize += result.size || 0;
+        } else {
+          // Track failed files
+          failedFiles.push({
+            path: relativePath,
+            error: result.error,
+          });
+          checkpoint.failedFiles = failedFiles;
+        }
+
+        processedCount++;
+
+        // Save checkpoint every 10 files
+        if (processedCount % 10 === 0) {
+          resumeManager.saveCheckpoint(checkpoint);
+        }
+
+        // Update progress bar
+        progressBar.increment(1, { downloadedSize });
+      } catch (error) {
+        // Handle interruption gracefully
+        if (error.name === "SIGINT") {
+          resumeManager.saveCheckpoint(checkpoint);
+          progressBar.stop();
+          console.log(
+            chalk.blue(`\n⏸️  Download interrupted. Progress saved.`)
+          );
+          console.log(chalk.blue(`💡 Run the same command again to resume.`));
+          return;
+        }
+
+        failedFiles.push({
+          path: item.path,
+          error: error.message,
+        });
+        checkpoint.failedFiles = failedFiles;
+        progressBar.increment(1, { downloadedSize });
+      }
+    }
+
+    progressBar.stop();
+    console.log(); // Add an empty line after progress bar
+
+    // Final checkpoint save
+    resumeManager.saveCheckpoint(checkpoint);
+
+    // Count results
+    const succeeded = checkpoint.downloadedFiles.length;
+    const failed = failedFiles.length;
+
+    if (failed > 0) {
+      console.log(
+        chalk.yellow(
+          `Downloaded ${succeeded} files successfully, ${failed} files failed`
+        )
+      );
+
+      if (failed <= 5) {
+        console.log(chalk.yellow("Failed files:"));
+        failedFiles.forEach((file) => {
+          console.log(chalk.yellow(`  - ${file.path}: ${file.error}`));
+        });
+      }
+
+      console.log(
+        chalk.blue(`💡 Run the same command again to retry failed downloads`)
+      );
+    } else {
+      console.log(
+        chalk.green(`🎉 All ${succeeded} files downloaded successfully!`)
+      );
+      resumeManager.cleanupCheckpoint(url, outputDir);
+    }
+
+    console.log(chalk.green(`Folder cloned successfully!`));
+  } catch (error) {
+    // Save checkpoint on any error
+    if (checkpoint) {
+      resumeManager.saveCheckpoint(checkpoint);
+    }
+
+    console.error(chalk.red(`Error downloading folder: ${error.message}`));
+    throw error;
+  }
+};

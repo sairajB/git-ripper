@@ -1,10 +1,12 @@
 import { program } from "commander";
 import { parseGitHubUrl } from "./parser.js";
-import { downloadFolder } from "./downloader.js";
+import { downloadFolder, downloadFolderWithResume } from "./downloader.js";
 import { downloadAndArchive } from "./archiver.js";
+import { ResumeManager } from "./resumeManager.js";
 import { fileURLToPath } from "url";
 import { dirname, join, resolve } from "path";
 import fs from "fs";
+import chalk from "chalk";
 
 // Get package.json for version
 const __filename = fileURLToPath(import.meta.url);
@@ -56,11 +58,50 @@ const initializeCLI = () => {
   program
     .version(packageJson.version)
     .description("Clone specific folders from GitHub repositories")
-    .argument("<url>", "GitHub URL of the folder to clone")
+    .argument("[url]", "GitHub URL of the folder to clone")
     .option("-o, --output <directory>", "Output directory", process.cwd())
     .option("--zip [filename]", "Create ZIP archive of downloaded files")
+    .option("--no-resume", "Disable resume functionality")
+    .option("--force-restart", "Ignore existing checkpoints and start fresh")
+    .option("--list-checkpoints", "List all existing download checkpoints")
     .action(async (url, options) => {
       try {
+        // Handle list checkpoints option
+        if (options.listCheckpoints) {
+          const resumeManager = new ResumeManager();
+          const checkpoints = resumeManager.listCheckpoints();
+
+          if (checkpoints.length === 0) {
+            console.log(chalk.yellow("No download checkpoints found."));
+            return;
+          }
+
+          console.log(chalk.cyan("\n📋 Download Checkpoints:"));
+          checkpoints.forEach((cp, index) => {
+            console.log(chalk.blue(`\n${index + 1}. ID: ${cp.id}`));
+            console.log(`   URL: ${cp.url}`);
+            console.log(`   Output: ${cp.outputDir}`);
+            console.log(`   Progress: ${cp.progress}`);
+            console.log(
+              `   Last Updated: ${new Date(cp.timestamp).toLocaleString()}`
+            );
+            if (cp.failedFiles > 0) {
+              console.log(chalk.yellow(`   Failed Files: ${cp.failedFiles}`));
+            }
+          });
+          console.log();
+          return;
+        }
+
+        // URL is required for download operations
+        if (!url) {
+          console.error(
+            chalk.red("Error: URL is required for download operations")
+          );
+          console.log("Use --list-checkpoints to see existing downloads");
+          process.exit(1);
+        }
+
         console.log(`Parsing URL: ${url}`);
         const parsedUrl = parseGitHubUrl(url);
 
@@ -76,12 +117,27 @@ const initializeCLI = () => {
         const archiveName =
           typeof options.zip === "string" ? options.zip : null;
 
+        // Prepare download options
+        const downloadOptions = {
+          resume: options.resume !== false, // Default to true unless --no-resume
+          forceRestart: options.forceRestart || false,
+        };
+
         if (createArchive) {
           console.log(`Creating ZIP archive...`);
           await downloadAndArchive(parsedUrl, options.output, archiveName);
         } else {
           console.log(`Downloading folder to: ${options.output}`);
-          await downloadFolder(parsedUrl, options.output);
+
+          if (downloadOptions.resume) {
+            await downloadFolderWithResume(
+              parsedUrl,
+              options.output,
+              downloadOptions
+            );
+          } else {
+            await downloadFolder(parsedUrl, options.output);
+          }
         }
 
         console.log("Operation completed successfully!");
