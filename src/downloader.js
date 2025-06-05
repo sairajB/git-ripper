@@ -45,6 +45,7 @@ const getSpinnerFrame = () => {
  * @param {string} branch - Branch name
  * @param {string} folderPath - Path to the folder
  * @returns {Promise<Array>} - Promise resolving to an array of file objects
+ * @throws {Error} - Throws error on API failures instead of returning empty array
  */
 const fetchFolderContents = async (owner, repo, branch, folderPath) => {
   let effectiveBranch = branch;
@@ -55,12 +56,9 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
       const repoInfoResponse = await axios.get(repoInfoUrl);
       effectiveBranch = repoInfoResponse.data.default_branch;
       if (!effectiveBranch) {
-        console.error(
-          chalk.red(
-            `Could not determine default branch for ${owner}/${repo}. Please specify a branch in the URL.`
-          )
+        throw new Error(
+          `Could not determine default branch for ${owner}/${repo}. Please specify a branch in the URL.`
         );
-        return [];
       }
       console.log(
         chalk.blue(
@@ -68,12 +66,12 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
         )
       );
     } catch (error) {
-      console.error(
-        chalk.red(
-          `Failed to fetch default branch for ${owner}/${repo}: ${error.message}`
-        )
+      if (error.message.includes("Could not determine default branch")) {
+        throw error;
+      }
+      throw new Error(
+        `Failed to fetch default branch for ${owner}/${repo}: ${error.message}`
       );
-      return [];
     }
   }
 
@@ -109,54 +107,44 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
       return response.data.tree.filter((item) => item.path.startsWith(prefix));
     }
   } catch (error) {
+    let errorMessage = "";
+    let isRateLimit = false;
+
     if (error.response) {
       // Handle specific HTTP error codes
       switch (error.response.status) {
         case 403:
           if (error.response.headers["x-ratelimit-remaining"] === "0") {
-            console.error(
-              chalk.red(
-                `GitHub API rate limit exceeded. Please wait until ${new Date(
-                  parseInt(error.response.headers["x-ratelimit-reset"]) * 1000
-                ).toLocaleTimeString()} or add a GitHub token (feature coming soon).`
-              )
-            );
+            isRateLimit = true;
+            errorMessage = `GitHub API rate limit exceeded. Please wait until ${new Date(
+              parseInt(error.response.headers["x-ratelimit-reset"]) * 1000
+            ).toLocaleTimeString()} or add a GitHub token (feature coming soon).`;
           } else {
-            console.error(
-              chalk.red(
-                `Access forbidden: ${
-                  error.response.data.message || "Unknown reason"
-                }`
-              )
-            );
+            errorMessage = `Access forbidden: ${
+              error.response.data.message ||
+              "Repository may be private or you may not have access"
+            }`;
           }
           break;
         case 404:
-          console.error(
-            chalk.red(
-              `Repository, branch, or folder not found: ${owner}/${repo}/${branch}/${folderPath}`
-            )
-          );
+          errorMessage = `Repository, branch, or folder not found: ${owner}/${repo}/${branch}/${folderPath}`;
           break;
         default:
-          console.error(
-            chalk.red(
-              `API error (${error.response.status}): ${
-                error.response.data.message || error.message
-              }`
-            )
-          );
+          errorMessage = `API error (${error.response.status}): ${
+            error.response.data.message || error.message
+          }`;
       }
     } else if (error.request) {
-      console.error(
-        chalk.red(
-          `Network error: No response received from GitHub. Please check your internet connection.`
-        )
-      );
+      errorMessage = `Network error: No response received from GitHub. Please check your internet connection.`;
     } else {
-      console.error(chalk.red(`Error preparing request: ${error.message}`));
+      errorMessage = `Error preparing request: ${error.message}`;
     }
-    return [];
+
+    // Always throw the error instead of returning empty array
+    const enrichedError = new Error(errorMessage);
+    enrichedError.isRateLimit = isRateLimit;
+    enrichedError.statusCode = error.response?.status;
+    throw enrichedError;
   }
 };
 
@@ -349,11 +337,15 @@ const downloadFolder = async (
     const contents = await fetchFolderContents(owner, repo, branch, folderPath);
 
     if (!contents || contents.length === 0) {
-      console.log(
-        chalk.yellow(`No files found in ${folderPath || "repository root"}`)
-      );
-      console.log(chalk.green(`Folder cloned successfully!`));
-      return;
+      const message = `No files found in ${folderPath || "repository root"}`;
+      console.log(chalk.yellow(message));
+      // Don't print success message when no files are found - this might indicate an error
+      return {
+        success: true,
+        filesDownloaded: 0,
+        failedFiles: 0,
+        isEmpty: true,
+      };
     }
 
     // Filter for blob type (files)
@@ -361,15 +353,18 @@ const downloadFolder = async (
     const totalFiles = files.length;
 
     if (totalFiles === 0) {
-      console.log(
-        chalk.yellow(
-          `No files found in ${
-            folderPath || "repository root"
-          } (only directories)`
-        )
-      );
-      console.log(chalk.green(`Folder cloned successfully!`));
-      return;
+      const message = `No files found in ${
+        folderPath || "repository root"
+      } (only directories)`;
+      console.log(chalk.yellow(message));
+      // This is a legitimate case - directory exists but contains only subdirectories
+      console.log(chalk.green(`Directory structure downloaded successfully!`));
+      return {
+        success: true,
+        filesDownloaded: 0,
+        failedFiles: 0,
+        isEmpty: true,
+      };
     }
 
     console.log(
@@ -464,7 +459,6 @@ const downloadFolder = async (
     // Count successful and failed downloads
     const succeeded = results.filter((r) => r.success).length;
     const failed = failedFiles.length;
-
     if (failed > 0) {
       console.log(
         chalk.yellow(
@@ -485,15 +479,45 @@ const downloadFolder = async (
           )
         );
       }
+
+      // Don't claim success if files failed to download
+      if (succeeded === 0) {
+        console.log(
+          chalk.red(`❌ Download failed: No files were downloaded successfully`)
+        );
+        return {
+          success: false,
+          filesDownloaded: succeeded,
+          failedFiles: failed,
+          isEmpty: false,
+        };
+      } else {
+        console.log(chalk.yellow(`⚠️  Download completed with errors`));
+        return {
+          success: false,
+          filesDownloaded: succeeded,
+          failedFiles: failed,
+          isEmpty: false,
+        };
+      }
     } else {
       console.log(
-        chalk.green(` All ${succeeded} files downloaded successfully!`)
+        chalk.green(`✅ All ${succeeded} files downloaded successfully!`)
       );
+      console.log(chalk.green(`Folder cloned successfully!`));
+      return {
+        success: true,
+        filesDownloaded: succeeded,
+        failedFiles: failed,
+        isEmpty: false,
+      };
     }
-
-    console.log(chalk.green(`Folder cloned successfully!`));
   } catch (error) {
-    console.error(chalk.red(`Error downloading folder: ${error.message}`));
+    // Log the specific error details
+    console.error(chalk.red(`❌ Error downloading folder: ${error.message}`));
+
+    // Re-throw the error so the main CLI can exit with proper error code
+    throw error;
   }
 };
 
@@ -576,13 +600,16 @@ const downloadFolderWithResume = async (
 
   try {
     const contents = await fetchFolderContents(owner, repo, branch, folderPath);
-
     if (!contents || contents.length === 0) {
-      console.log(
-        chalk.yellow(`No files found in ${folderPath || "repository root"}`)
-      );
-      console.log(chalk.green(`Folder cloned successfully!`));
-      return;
+      const message = `No files found in ${folderPath || "repository root"}`;
+      console.log(chalk.yellow(message));
+      // Don't print success message when no files are found - this might indicate an error
+      return {
+        success: true,
+        filesDownloaded: 0,
+        failedFiles: 0,
+        isEmpty: true,
+      };
     }
 
     // Filter for blob type (files)
@@ -590,15 +617,18 @@ const downloadFolderWithResume = async (
     const totalFiles = files.length;
 
     if (totalFiles === 0) {
-      console.log(
-        chalk.yellow(
-          `No files found in ${
-            folderPath || "repository root"
-          } (only directories)`
-        )
-      );
-      console.log(chalk.green(`Folder cloned successfully!`));
-      return;
+      const message = `No files found in ${
+        folderPath || "repository root"
+      } (only directories)`;
+      console.log(chalk.yellow(message));
+      // This is a legitimate case - directory exists but contains only subdirectories
+      console.log(chalk.green(`Directory structure downloaded successfully!`));
+      return {
+        success: true,
+        filesDownloaded: 0,
+        failedFiles: 0,
+        isEmpty: true,
+      };
     }
 
     // Create new checkpoint if none exists
@@ -748,7 +778,6 @@ const downloadFolderWithResume = async (
     // Count results
     const succeeded = checkpoint.downloadedFiles.length;
     const failed = failedFiles.length;
-
     if (failed > 0) {
       console.log(
         chalk.yellow(
@@ -766,21 +795,47 @@ const downloadFolderWithResume = async (
       console.log(
         chalk.blue(`💡 Run the same command again to retry failed downloads`)
       );
+
+      // Don't claim success if files failed to download
+      if (succeeded === 0) {
+        console.log(
+          chalk.red(`❌ Download failed: No files were downloaded successfully`)
+        );
+        return {
+          success: false,
+          filesDownloaded: succeeded,
+          failedFiles: failed,
+          isEmpty: false,
+        };
+      } else {
+        console.log(chalk.yellow(`⚠️  Download completed with errors`));
+        return {
+          success: false,
+          filesDownloaded: succeeded,
+          failedFiles: failed,
+          isEmpty: false,
+        };
+      }
     } else {
       console.log(
         chalk.green(`🎉 All ${succeeded} files downloaded successfully!`)
       );
       resumeManager.cleanupCheckpoint(url, outputDir);
+      console.log(chalk.green(`Folder cloned successfully!`));
+      return {
+        success: true,
+        filesDownloaded: succeeded,
+        failedFiles: failed,
+        isEmpty: false,
+      };
     }
-
-    console.log(chalk.green(`Folder cloned successfully!`));
   } catch (error) {
     // Save checkpoint on any error
     if (checkpoint) {
       resumeManager.saveCheckpoint(checkpoint);
     }
 
-    console.error(chalk.red(`Error downloading folder: ${error.message}`));
+    console.error(chalk.red(`❌ Error downloading folder: ${error.message}`));
     throw error;
   }
 };

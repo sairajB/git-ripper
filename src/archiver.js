@@ -144,10 +144,32 @@ export const downloadAndArchive = async (
   // Create a temporary directory for the download
   const tempDir = path.join(outputDir, `.temp-${Date.now()}`);
   fs.mkdirSync(tempDir, { recursive: true });
-
   try {
     // Download the folder contents
-    await downloadFolder(repoInfo, tempDir);
+    const downloadResult = await downloadFolder(repoInfo, tempDir);
+
+    // Check if download failed
+    if (downloadResult && !downloadResult.success) {
+      throw new Error(
+        `Download failed: ${
+          downloadResult.failedFiles || 0
+        } files could not be downloaded`
+      );
+    }
+
+    // Check if there's anything to archive
+    const files = fs
+      .readdirSync(tempDir, { recursive: true })
+      .filter((file) => {
+        const fullPath = path.join(tempDir, file);
+        return fs.statSync(fullPath).isFile();
+      });
+
+    if (files.length === 0) {
+      throw new Error(
+        `No files to archive - download may have failed or repository is empty`
+      );
+    }
 
     // Determine archive filename
     let archiveFileName = archiveName;

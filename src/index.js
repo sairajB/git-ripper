@@ -123,24 +123,46 @@ const initializeCLI = () => {
           forceRestart: options.forceRestart || false,
         };
 
-        if (createArchive) {
-          console.log(`Creating ZIP archive...`);
-          await downloadAndArchive(parsedUrl, options.output, archiveName);
-        } else {
-          console.log(`Downloading folder to: ${options.output}`);
+        let operationType = createArchive ? "archive" : "download";
+        let result = null;
+        let error = null;
 
-          if (downloadOptions.resume) {
-            await downloadFolderWithResume(
-              parsedUrl,
-              options.output,
-              downloadOptions
-            );
+        try {
+          if (createArchive) {
+            console.log(`Creating ZIP archive...`);
+            await downloadAndArchive(parsedUrl, options.output, archiveName);
           } else {
-            await downloadFolder(parsedUrl, options.output);
+            console.log(`Downloading folder to: ${options.output}`);
+            if (downloadOptions.resume) {
+              result = await downloadFolderWithResume(
+                parsedUrl,
+                options.output,
+                downloadOptions
+              );
+            } else {
+              result = await downloadFolder(parsedUrl, options.output);
+            }
           }
+        } catch (opError) {
+          error = opError;
         }
 
-        console.log("Operation completed successfully!");
+        // Consolidated result and error handling
+        if (error) {
+          const failMsg =
+            operationType === "archive"
+              ? `❌ Archive creation failed: ${error.message}`
+              : `❌ Download failed: ${error.message}`;
+          console.error(chalk.red(failMsg));
+          process.exit(1);
+        } else if (!createArchive && result && !result.success) {
+          console.error(chalk.red(`❌ Download failed`));
+          process.exit(1);
+        } else if (!createArchive && result && result.isEmpty) {
+          console.log("Operation completed - no files to download!");
+        } else {
+          console.log("Operation completed successfully!");
+        }
       } catch (error) {
         console.error("Error:", error.message);
         process.exit(1);
