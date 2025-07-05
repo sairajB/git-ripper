@@ -52,7 +52,9 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
   if (!effectiveBranch) {
     // If no branch is specified, fetch the default branch for the repository
     try {
-      const repoInfoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+      const repoInfoUrl = `https://api.github.com/repos/${encodeURIComponent(
+        owner
+      )}/${encodeURIComponent(repo)}`;
       const repoInfoResponse = await axios.get(repoInfoUrl);
       effectiveBranch = repoInfoResponse.data.default_branch;
       if (!effectiveBranch) {
@@ -75,7 +77,11 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
     }
   }
 
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${effectiveBranch}?recursive=1`;
+  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(
+    owner
+  )}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(
+    effectiveBranch
+  )}?recursive=1`;
 
   try {
     const response = await axios.get(apiUrl);
@@ -164,7 +170,9 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
     // This check might be redundant if fetchFolderContents already resolved it,
     // but it's a good fallback for direct downloadFile calls if any.
     try {
-      const repoInfoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+      const repoInfoUrl = `https://api.github.com/repos/${encodeURIComponent(
+        owner
+      )}/${encodeURIComponent(repo)}`;
       const repoInfoResponse = await axios.get(repoInfoUrl);
       effectiveBranch = repoInfoResponse.data.default_branch;
       if (!effectiveBranch) {
@@ -191,10 +199,16 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
     }
   }
 
-  const baseUrl = `https://raw.githubusercontent.com/${owner}/${repo}`;
+  const baseUrl = `https://raw.githubusercontent.com/${encodeURIComponent(
+    owner
+  )}/${encodeURIComponent(repo)}`;
+  const encodedFilePath = filePath
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
   const fileUrlPath = effectiveBranch
-    ? `/${effectiveBranch}/${filePath}`
-    : `/${filePath}`; // filePath might be at root
+    ? `/${encodeURIComponent(effectiveBranch)}/${encodedFilePath}`
+    : `/${encodedFilePath}`; // filePath might be at root
   const url = `${baseUrl}${fileUrlPath}`;
 
   try {
@@ -539,9 +553,17 @@ const downloadFolderWithResume = async (
   }
 
   const resumeManager = new ResumeManager();
-  const url = `https://github.com/${owner}/${repo}/tree/${branch || "main"}/${
-    folderPath || ""
-  }`;
+  const encodedFolderPath = folderPath
+    ? folderPath
+        .split("/")
+        .map((part) => encodeURIComponent(part))
+        .join("/")
+    : "";
+  const url = `https://github.com/${encodeURIComponent(
+    owner
+  )}/${encodeURIComponent(repo)}/tree/${encodeURIComponent(
+    branch || "main"
+  )}/${encodedFolderPath}`;
 
   // Clear checkpoint if force restart is requested
   if (forceRestart) {

@@ -16,10 +16,10 @@ export function parseGitHubUrl(url) {
   }
 
   // Extract components from the matched pattern
-  const owner = match[1];
-  const repo = match[2];
-  const branch = match[3]; // Branch might not be in the URL for root downloads
-  const folderPath = match[4] || ""; // Empty string if no folder path
+  const owner = decodeURIComponent(match[1]);
+  const repo = decodeURIComponent(match[2]);
+  const branch = match[3] ? decodeURIComponent(match[3]) : ""; // Branch is an empty string if not present
+  const folderPath = match[4] ? decodeURIComponent(match[4]) : ""; // Empty string if no folder path
 
   // Additional validation
   if (!owner || !repo) {
