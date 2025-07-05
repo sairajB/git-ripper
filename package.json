@@ -1,6 +1,6 @@
 {
   "name": "git-ripper",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "description": "CLI tool that lets you download specific folders from GitHub repositories without cloning the entire repo.",
   "main": "src/index.js",
   "type": "module",
