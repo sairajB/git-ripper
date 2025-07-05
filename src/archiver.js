@@ -88,7 +88,7 @@ export const createArchive = (sourceDir, outputPath) => {
         const size = archive.pointer();
         console.log(
           chalk.green(
-            `✓ Archive created: ${outputPath} (${(size / 1024 / 1024).toFixed(
+            `Archive created: ${outputPath} (${(size / 1024 / 1024).toFixed(
               2
             )} MB)`
           )

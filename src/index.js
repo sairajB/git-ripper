@@ -76,7 +76,7 @@ const initializeCLI = () => {
             return;
           }
 
-          console.log(chalk.cyan("\n📋 Download Checkpoints:"));
+          console.log(chalk.cyan("\nDownload Checkpoints:"));
           checkpoints.forEach((cp, index) => {
             console.log(chalk.blue(`\n${index + 1}. ID: ${cp.id}`));
             console.log(`   URL: ${cp.url}`);
@@ -151,12 +151,12 @@ const initializeCLI = () => {
         if (error) {
           const failMsg =
             operationType === "archive"
-              ? `❌ Archive creation failed: ${error.message}`
-              : `❌ Download failed: ${error.message}`;
+              ? `Archive creation failed: ${error.message}`
+              : `Download failed: ${error.message}`;
           console.error(chalk.red(failMsg));
           process.exit(1);
         } else if (!createArchive && result && !result.success) {
-          console.error(chalk.red(`❌ Download failed`));
+          console.error(chalk.red(`Download failed`));
           process.exit(1);
         } else if (!createArchive && result && result.isEmpty) {
           console.log("Operation completed - no files to download!");

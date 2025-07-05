@@ -483,7 +483,7 @@ const downloadFolder = async (
       // Don't claim success if files failed to download
       if (succeeded === 0) {
         console.log(
-          chalk.red(`❌ Download failed: No files were downloaded successfully`)
+          chalk.red(`Download failed: No files were downloaded successfully`)
         );
         return {
           success: false,
@@ -492,7 +492,7 @@ const downloadFolder = async (
           isEmpty: false,
         };
       } else {
-        console.log(chalk.yellow(`⚠️  Download completed with errors`));
+        console.log(chalk.yellow(`Download completed with errors`));
         return {
           success: false,
           filesDownloaded: succeeded,
@@ -502,7 +502,7 @@ const downloadFolder = async (
       }
     } else {
       console.log(
-        chalk.green(`✅ All ${succeeded} files downloaded successfully!`)
+        chalk.green(`All ${succeeded} files downloaded successfully!`)
       );
       console.log(chalk.green(`Folder cloned successfully!`));
       return {
@@ -514,7 +514,7 @@ const downloadFolder = async (
     }
   } catch (error) {
     // Log the specific error details
-    console.error(chalk.red(`❌ Error downloading folder: ${error.message}`));
+    console.error(chalk.red(`Error downloading folder: ${error.message}`));
 
     // Re-throw the error so the main CLI can exit with proper error code
     throw error;
@@ -554,14 +554,14 @@ const downloadFolderWithResume = async (
   if (checkpoint) {
     console.log(
       chalk.blue(
-        `🔄 Found previous download from ${new Date(
+        `Found previous download from ${new Date(
           checkpoint.timestamp
         ).toLocaleString()}`
       )
     );
     console.log(
       chalk.blue(
-        `📊 Progress: ${checkpoint.downloadedFiles.length}/${checkpoint.totalFiles} files completed`
+        `Progress: ${checkpoint.downloadedFiles.length}/${checkpoint.totalFiles} files completed`
       )
     );
 
@@ -587,11 +587,11 @@ const downloadFolderWithResume = async (
     if (corruptedCount > 0) {
       console.log(
         chalk.yellow(
-          `🔧 Detected ${corruptedCount} corrupted files, will re-download`
+          `Detected ${corruptedCount} corrupted files, will re-download`
         )
       );
     }
-    console.log(chalk.green(`✅ Verified ${validFiles.length} existing files`));
+    console.log(chalk.green(`Verified ${validFiles.length} existing files`));
   }
 
   console.log(
@@ -640,7 +640,7 @@ const downloadFolderWithResume = async (
       );
       console.log(
         chalk.cyan(
-          `📥 Starting download of ${totalFiles} files from ${chalk.white(
+          `Starting download of ${totalFiles} files from ${chalk.white(
             owner + "/" + repo
           )}...`
         )
@@ -648,7 +648,7 @@ const downloadFolderWithResume = async (
     } else {
       // Update total files in case repository changed
       checkpoint.totalFiles = totalFiles;
-      console.log(chalk.cyan(`📥 Resuming download...`));
+      console.log(chalk.cyan(`Resuming download...`));
     }
 
     // Get remaining files to download
@@ -663,13 +663,13 @@ const downloadFolderWithResume = async (
     });
 
     if (remainingFiles.length === 0) {
-      console.log(chalk.green(`🎉 All files already downloaded!`));
+      console.log(chalk.green(`All files already downloaded!`));
       resumeManager.cleanupCheckpoint(url, outputDir);
       return;
     }
 
     console.log(
-      chalk.cyan(`📥 Downloading ${remainingFiles.length} remaining files...`)
+      chalk.cyan(`Downloading ${remainingFiles.length} remaining files...`)
     );
 
     // Setup progress bar
@@ -753,10 +753,8 @@ const downloadFolderWithResume = async (
         if (error.name === "SIGINT") {
           resumeManager.saveCheckpoint(checkpoint);
           progressBar.stop();
-          console.log(
-            chalk.blue(`\n⏸️  Download interrupted. Progress saved.`)
-          );
-          console.log(chalk.blue(`💡 Run the same command again to resume.`));
+          console.log(chalk.blue(`\nDownload interrupted. Progress saved.`));
+          console.log(chalk.blue(`Run the same command again to resume.`));
           return;
         }
 
@@ -793,13 +791,13 @@ const downloadFolderWithResume = async (
       }
 
       console.log(
-        chalk.blue(`💡 Run the same command again to retry failed downloads`)
+        chalk.blue(`Run the same command again to retry failed downloads`)
       );
 
       // Don't claim success if files failed to download
       if (succeeded === 0) {
         console.log(
-          chalk.red(`❌ Download failed: No files were downloaded successfully`)
+          chalk.red(`Download failed: No files were downloaded successfully`)
         );
         return {
           success: false,
@@ -808,7 +806,7 @@ const downloadFolderWithResume = async (
           isEmpty: false,
         };
       } else {
-        console.log(chalk.yellow(`⚠️  Download completed with errors`));
+        console.log(chalk.yellow(`Download completed with errors`));
         return {
           success: false,
           filesDownloaded: succeeded,
@@ -818,7 +816,7 @@ const downloadFolderWithResume = async (
       }
     } else {
       console.log(
-        chalk.green(`🎉 All ${succeeded} files downloaded successfully!`)
+        chalk.green(`All ${succeeded} files downloaded successfully!`)
       );
       resumeManager.cleanupCheckpoint(url, outputDir);
       console.log(chalk.green(`Folder cloned successfully!`));
@@ -835,7 +833,7 @@ const downloadFolderWithResume = async (
       resumeManager.saveCheckpoint(checkpoint);
     }
 
-    console.error(chalk.red(`❌ Error downloading folder: ${error.message}`));
+    console.error(chalk.red(`Error downloading folder: ${error.message}`));
     throw error;
   }
 };
