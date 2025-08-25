@@ -3,9 +3,10 @@ import { parseGitHubUrl } from "./parser.js";
 import { downloadFolder, downloadFolderWithResume } from "./downloader.js";
 import { downloadAndArchive } from "./archiver.js";
 import { ResumeManager } from "./resumeManager.js";
-import { fileURLToPath } from "url";
-import { dirname, join, resolve } from "path";
-import fs from "fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import fs from "node:fs";
+import process from "node:process";
 import chalk from "chalk";
 
 // Get package.json for version

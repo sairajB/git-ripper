@@ -1,8 +1,9 @@
 import axios from "axios";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 import cliProgress from "cli-progress";
 import pLimit from "p-limit";
 import chalk from "chalk";
