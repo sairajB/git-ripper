@@ -143,6 +143,9 @@ export class ResumeManager {
     if (fs.existsSync(checkpointFile)) {
       try {
         fs.unlinkSync(checkpointFile);
+        if (fs.readdirSync(this.checkpointDir).length === 0) {
+          fs.rmdirSync(this.checkpointDir);
+        }
       } catch (error) {
         console.error(`Failed to cleanup checkpoint: ${error.message}`);
       }
