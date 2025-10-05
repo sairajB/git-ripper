@@ -6,7 +6,6 @@
 [![License](https://img.shields.io/npm/l/git-ripper.svg)](https://github.com/sairajB/git-ripper/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/npm/dt/git-ripper.svg?style=flat&label=total%20downloads)](https://www.npmjs.com/package/git-ripper)
 [![Weekly Downloads](https://img.shields.io/npm/dw/git-ripper.svg)](https://www.npmjs.com/package/git-ripper)
-[![Bundle Size](https://img.shields.io/bundlephobia/min/git-ripper.svg)](https://bundlephobia.com/package/git-ripper)
 [![GitHub issues](https://img.shields.io/github/issues/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/issues)
 [![GitHub stars](https://img.shields.io/github/stars/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/network)
