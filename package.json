@@ -44,7 +44,7 @@
   "bugs": {
     "url": "https://github.com/sairajB/git-ripper/issues"
   },
-  "homepage": "https://git-ripper.vercel.app",
+  "homepage": "https://git-ripper.sairajb.tech/",
   "engines": {
     "node": ">=16.0.0"
   },
