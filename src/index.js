@@ -1,10 +1,10 @@
 import { program } from "commander";
 import { parseGitHubUrl } from "./parser.js";
-import { downloadFolder, downloadFolderWithResume } from "./downloader.js";
+import { downloadFolder, downloadFolderWithResume, downloadFile } from "./downloader.js";
 import { downloadAndArchive } from "./archiver.js";
 import { ResumeManager } from "./resumeManager.js";
 import { fileURLToPath } from "node:url";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, basename } from "node:path";
 import fs from "node:fs";
 import process from "node:process";
 import chalk from "chalk";
@@ -61,6 +61,7 @@ const initializeCLI = () => {
     .description("Clone specific folders from GitHub repositories")
     .argument("[url]", "GitHub URL of the folder to clone")
     .option("-o, --output <directory>", "Output directory", process.cwd())
+    .option("--gh-token <token>", "GitHub Personal Access Token for private repositories")
     .option("--zip [filename]", "Create ZIP archive of downloaded files")
     .option("--no-resume", "Disable resume functionality")
     .option("--force-restart", "Ignore existing checkpoints and start fresh")
@@ -122,6 +123,7 @@ const initializeCLI = () => {
         const downloadOptions = {
           resume: options.resume !== false, // Default to true unless --no-resume
           forceRestart: options.forceRestart || false,
+          token: options.ghToken,
         };
 
         let operationType = createArchive ? "archive" : "download";
@@ -131,7 +133,19 @@ const initializeCLI = () => {
         try {
           if (createArchive) {
             console.log(`Creating ZIP archive...`);
-            await downloadAndArchive(parsedUrl, options.output, archiveName);
+            await downloadAndArchive(parsedUrl, options.output, archiveName, downloadOptions);
+          } else if (parsedUrl.type === "blob") {
+            console.log(`Downloading file to: ${options.output}`);
+            const fileName = basename(parsedUrl.folderPath);
+            const outputPath = join(options.output, fileName);
+            result = await downloadFile(
+              parsedUrl.owner,
+              parsedUrl.repo,
+              parsedUrl.branch,
+              parsedUrl.folderPath,
+              outputPath,
+              options.ghToken
+            );
           } else {
             console.log(`Downloading folder to: ${options.output}`);
             if (downloadOptions.resume) {
@@ -141,7 +155,7 @@ const initializeCLI = () => {
                 downloadOptions
               );
             } else {
-              result = await downloadFolder(parsedUrl, options.output);
+              result = await downloadFolder(parsedUrl, options.output, downloadOptions);
             }
           }
         } catch (opError) {

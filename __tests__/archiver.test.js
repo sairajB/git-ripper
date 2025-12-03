@@ -85,7 +85,8 @@ describe("downloadAndArchive", () => {
 
     expect(downloadFolderMock).toHaveBeenCalledWith(
       repoInfo,
-      expect.any(String)
+      expect.any(String),
+      expect.any(Object)
     );
     expect(fs.existsSync(archivePath)).toBe(true);
     expect(archivePath.endsWith("bundle.zip")).toBe(true);

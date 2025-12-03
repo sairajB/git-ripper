@@ -12,6 +12,21 @@ describe("parseGitHubUrl", () => {
       repo: "repo",
       branch: "main",
       folderPath: "path/to/folder",
+      type: "tree",
+    });
+  });
+
+  it("parses a complete blob URL", () => {
+    const result = parseGitHubUrl(
+      "https://github.com/owner/repo/blob/main/path/to/file.txt"
+    );
+
+    expect(result).toEqual({
+      owner: "owner",
+      repo: "repo",
+      branch: "main",
+      folderPath: "path/to/file.txt",
+      type: "blob",
     });
   });
 
@@ -23,6 +38,19 @@ describe("parseGitHubUrl", () => {
       repo: "repo",
       branch: "",
       folderPath: "",
+      type: "tree",
+    });
+  });
+
+  it("removes .git suffix from repository name", () => {
+    const result = parseGitHubUrl("https://github.com/owner/repo.git");
+
+    expect(result).toEqual({
+      owner: "owner",
+      repo: "repo",
+      branch: "",
+      folderPath: "",
+      type: "tree",
     });
   });
 

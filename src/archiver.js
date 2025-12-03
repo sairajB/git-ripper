@@ -128,12 +128,14 @@ export const createArchive = (sourceDir, outputPath) => {
  * @param {object} repoInfo - Repository information object
  * @param {string} outputDir - Directory where files should be downloaded
  * @param {string} archiveName - Custom name for the archive file (optional)
+ * @param {object} [options] - Download options including token
  * @returns {Promise<string>} - Path to the created archive
  */
 export const downloadAndArchive = async (
   repoInfo,
   outputDir,
-  archiveName = null
+  archiveName = null,
+  options = {}
 ) => {
   const { downloadFolder } = await import("./downloader.js");
 
@@ -146,7 +148,7 @@ export const downloadAndArchive = async (
   fs.mkdirSync(tempDir, { recursive: true });
   try {
     // Download the folder contents
-    const downloadResult = await downloadFolder(repoInfo, tempDir);
+    const downloadResult = await downloadFolder(repoInfo, tempDir, options);
 
     // Check if download failed
     if (downloadResult && !downloadResult.success) {
