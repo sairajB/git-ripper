@@ -96,12 +96,53 @@ git-ripper https://github.com/username/repository/tree/branch/folder --zip="my-a
 | Option                     | Description                              | Default           |
 | -------------------------- | ---------------------------------------- | ----------------- |
 | `-o, --output <directory>` | Specify output directory                 | Current directory |
+| `--gh-token <token>`       | GitHub Personal Access Token             | -                 |
 | `--zip [filename]`         | Create ZIP archive of downloaded content | -                 |
 | `--no-resume`              | Disable resume functionality             | -                 |
 | `--force-restart`          | Ignore existing checkpoints and restart  | -                 |
 | `--list-checkpoints`       | List all saved download checkpoints      | -                 |
 | `-V, --version`            | Show version number                      | -                 |
 | `-h, --help`               | Show help                                | -                 |
+
+## Authentication (Private Repositories & Rate Limits)
+
+To download from private repositories or to increase your API rate limit, you need to provide a GitHub Personal Access Token (PAT).
+
+### How to Generate a Token
+
+You can use either a **Fine-grained token** (Recommended) or a **Classic token**.
+
+#### Option A: Fine-grained Token (Recommended)
+
+1.  Go to **Settings** > **Developer settings** > **Personal access tokens** > **Fine-grained tokens**.
+2.  Click **Generate new token**.
+3.  Name it (e.g., "Git-ripper").
+4.  **Resource owner**: Select your user.
+5.  **Repository access**: Select **Only select repositories** and choose the private repository you want to download from.
+6.  **Permissions**:
+    *   Click on **Repository permissions**.
+    *   Find **Contents** and change Access to **Read-only**.
+    *   *Note: Metadata permission is selected automatically.*
+7.  Click **Generate token**.
+
+#### Option B: Classic Token
+
+1.  Go to **Settings** > **Developer settings** > **Personal access tokens** > **Tokens (classic)**.
+2.  Click **Generate new token** > **Generate new token (classic)**.
+3.  Give your token a descriptive name.
+4.  **Select Scopes:**
+    *   **For Private Repositories:** Select the **`repo`** scope (Full control of private repositories).
+5.  Click **Generate token**.
+
+### Using the Token
+
+Pass the token using the `--gh-token` flag:
+
+```bash
+git-ripper https://github.com/username/private-repo/tree/main/src --gh-token ghp_YourTokenHere
+```
+
+> **Security Note:** Be careful not to share your token or commit it to public repositories.
 
 ## Examples
 
@@ -207,7 +248,7 @@ The resume functionality uses checkpoint files stored in `.git_ripper_checkpoint
 
 ## Configuration
 
-Git-ripper works out of the box without configuration. For rate-limited GitHub API usage, authentication support is under development.
+Git-ripper works out of the box without configuration. For rate-limited GitHub API usage or private repositories, use the `--gh-token` option as described in the [Authentication](#authentication-private-repositories--rate-limits) section.
 
 ## Troubleshooting
 

@@ -45,10 +45,16 @@ const getSpinnerFrame = () => {
  * @param {string} repo - Repository name
  * @param {string} branch - Branch name
  * @param {string} folderPath - Path to the folder
+ * @param {string} [token] - GitHub Personal Access Token
  * @returns {Promise<Array>} - Promise resolving to an array of file objects
  * @throws {Error} - Throws error on API failures instead of returning empty array
  */
-const fetchFolderContents = async (owner, repo, branch, folderPath) => {
+const fetchFolderContents = async (owner, repo, branch, folderPath, token) => {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   let effectiveBranch = branch;
   if (!effectiveBranch) {
     // If no branch is specified, fetch the default branch for the repository
@@ -56,7 +62,7 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
       const repoInfoUrl = `https://api.github.com/repos/${encodeURIComponent(
         owner
       )}/${encodeURIComponent(repo)}`;
-      const repoInfoResponse = await axios.get(repoInfoUrl);
+      const repoInfoResponse = await axios.get(repoInfoUrl, { headers });
       effectiveBranch = repoInfoResponse.data.default_branch;
       if (!effectiveBranch) {
         throw new Error(
@@ -85,7 +91,7 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
   )}?recursive=1`;
 
   try {
-    const response = await axios.get(apiUrl);
+    const response = await axios.get(apiUrl, { headers });
 
     // Check if GitHub API returned truncated results
     if (response.data.truncated) {
@@ -162,9 +168,13 @@ const fetchFolderContents = async (owner, repo, branch, folderPath) => {
  * @param {string} branch - Branch name
  * @param {string} filePath - Path to the file
  * @param {string} outputPath - Path where the file should be saved
+ * @param {string} [token] - GitHub Personal Access Token
  * @returns {Promise<Object>} - Object containing download status
  */
-const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
+const downloadFile = async (owner, repo, branch, filePath, outputPath, token) => {
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
   let effectiveBranch = branch;
   if (!effectiveBranch) {
     // If no branch is specified, fetch the default branch for the repository
@@ -174,7 +184,7 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
       const repoInfoUrl = `https://api.github.com/repos/${encodeURIComponent(
         owner
       )}/${encodeURIComponent(repo)}`;
-      const repoInfoResponse = await axios.get(repoInfoUrl);
+      const repoInfoResponse = await axios.get(repoInfoUrl, { headers });
       effectiveBranch = repoInfoResponse.data.default_branch;
       if (!effectiveBranch) {
         // console.error(chalk.red(`Could not determine default branch for ${owner}/${repo} for file ${filePath}.`));
@@ -213,7 +223,7 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath) => {
   const url = `${baseUrl}${fileUrlPath}`;
 
   try {
-    const response = await axios.get(url, { responseType: "arraybuffer" });
+    const response = await axios.get(url, { responseType: "arraybuffer", headers });
 
     // Ensure the directory exists
     try {
@@ -338,18 +348,22 @@ const createProgressRenderer = (owner, repo, folderPath) => {
  * @param {string} repoInfo.branch - Branch name
  * @param {string} repoInfo.folderPath - Path to the folder
  * @param {string} outputDir - Directory where files should be saved
+ * @param {Object} [options] - Download options
+ * @param {string} [options.token] - GitHub Personal Access Token
  * @returns {Promise<void>} - Promise that resolves when all files are downloaded
  */
 const downloadFolder = async (
   { owner, repo, branch, folderPath },
-  outputDir
+  outputDir,
+  options = {}
 ) => {
+  const { token } = options;
   console.log(
     chalk.cyan(`Analyzing repository structure for ${owner}/${repo}...`)
   );
 
   try {
-    const contents = await fetchFolderContents(owner, repo, branch, folderPath);
+    const contents = await fetchFolderContents(owner, repo, branch, folderPath, token);
 
     if (!contents || contents.length === 0) {
       const message = `No files found in ${folderPath || "repository root"}`;
@@ -428,7 +442,8 @@ const downloadFolder = async (
             repo,
             branch,
             item.path,
-            outputFilePath
+            outputFilePath,
+            token
           );
 
           // Update progress metrics
@@ -537,7 +552,7 @@ const downloadFolder = async (
 };
 
 // Export functions in ESM format
-export { downloadFolder, downloadFolderWithResume };
+export { downloadFolder, downloadFolderWithResume, downloadFile };
 
 /**
  * Downloads all files from a folder in a GitHub repository with resume capability
@@ -547,10 +562,10 @@ const downloadFolderWithResume = async (
   outputDir,
   options = { resume: true, forceRestart: false }
 ) => {
-  const { resume = true, forceRestart = false } = options;
+  const { resume = true, forceRestart = false, token } = options;
 
   if (!resume) {
-    return downloadFolder({ owner, repo, branch, folderPath }, outputDir);
+    return downloadFolder({ owner, repo, branch, folderPath }, outputDir, options);
   }
 
   const resumeManager = new ResumeManager();
@@ -622,7 +637,7 @@ const downloadFolderWithResume = async (
   );
 
   try {
-    const contents = await fetchFolderContents(owner, repo, branch, folderPath);
+    const contents = await fetchFolderContents(owner, repo, branch, folderPath, token);
     if (!contents || contents.length === 0) {
       const message = `No files found in ${folderPath || "repository root"}`;
       console.log(chalk.yellow(message));
@@ -741,7 +756,8 @@ const downloadFolderWithResume = async (
           repo,
           branch,
           item.path,
-          outputFilePath
+          outputFilePath,
+          token
         );
 
         if (result.success) {

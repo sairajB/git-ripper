@@ -44,7 +44,7 @@ const setupDownloaderModule = async ({
 }) => {
   jest.resetModules();
 
-  const axiosGetMock = jest.fn((url) => {
+  const axiosGetMock = jest.fn((url, config) => {
     if (url.includes("/git/trees/")) {
       if (treeError) {
         return Promise.reject(treeError);
@@ -166,7 +166,47 @@ describe("downloadFolder", () => {
     );
     expect(progressMocks.stopMock).toHaveBeenCalled();
     expect(axiosGetMock).toHaveBeenCalledWith(
-      expect.stringContaining("/git/trees/")
+      expect.stringContaining("/git/trees/"),
+      expect.anything()
+    );
+  });
+
+  it("uses provided token for authentication", async () => {
+    const treeEntries = [{ path: "dir/file.txt", type: "blob" }];
+    const fileContents = { "dir/file.txt": "content" };
+    const { downloadFolder, axiosGetMock } = await setupDownloaderModule({
+      treeEntries,
+      fileContents,
+    });
+
+    const outputDir = path.join(tempRoot, "output");
+    const token = "ghp_test_token";
+    await downloadFolder(
+      { owner: "owner", repo: "repo", branch: "main", folderPath: "dir" },
+      outputDir,
+      { token }
+    );
+
+    // Check if token was passed in headers for tree fetch
+    expect(axiosGetMock).toHaveBeenCalledWith(
+      expect.stringContaining("/git/trees/"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        }),
+      })
+    );
+
+    // Check if token was passed in headers for file download
+    expect(axiosGetMock).toHaveBeenCalledWith(
+      expect.stringContaining("raw.githubusercontent.com"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: `Bearer ${token}`,
+        }),
+      })
     );
   });
 
@@ -232,6 +272,66 @@ describe("downloadFolder", () => {
   });
 });
 
+describe("downloadFile", () => {
+  let tempRoot;
+
+  beforeEach(() => {
+    tempRoot = createTempDir();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  });
+
+  it("downloads a single file successfully", async () => {
+    const fileContents = { "path/to/file.txt": "file content" };
+    const { downloadFile } = await setupDownloaderModule({
+      treeEntries: [],
+      fileContents,
+    });
+
+    const outputPath = path.join(tempRoot, "file.txt");
+    const result = await downloadFile(
+      "owner",
+      "repo",
+      "main",
+      "path/to/file.txt",
+      outputPath
+    );
+
+    expect(result.success).toBe(true);
+    expect(fs.readFileSync(outputPath, "utf8")).toBe("file content");
+  });
+
+  it("uses token for single file download", async () => {
+    const fileContents = { "path/to/file.txt": "file content" };
+    const { downloadFile, axiosGetMock } = await setupDownloaderModule({
+      treeEntries: [],
+      fileContents,
+    });
+
+    const outputPath = path.join(tempRoot, "file.txt");
+    const token = "ghp_test_token";
+    await downloadFile(
+      "owner",
+      "repo",
+      "main",
+      "path/to/file.txt",
+      outputPath,
+      token
+    );
+
+    expect(axiosGetMock).toHaveBeenCalledWith(
+      expect.stringContaining("raw.githubusercontent.com"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: `Bearer ${token}`,
+        }),
+      })
+    );
+  });
+});
+
 describe("downloadFolderWithResume", () => {
   let workDir;
   let originalCwd;
@@ -284,7 +384,8 @@ describe("downloadFolderWithResume", () => {
       "second"
     );
     expect(axiosGetMock).toHaveBeenCalledWith(
-      expect.stringContaining("api.github.com/repos/")
+      expect.stringContaining("api.github.com/repos/"),
+      expect.anything()
     );
 
     const checkpointDir = path.join(workDir, ".git-ripper-checkpoints");
