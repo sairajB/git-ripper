@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+PROJECT_DEEP_ANALYSIS.pdf
