@@ -131,7 +131,7 @@ const fetchFolderContents = async (owner, repo, branch, folderPath, token) => {
             isRateLimit = true;
             errorMessage = `GitHub API rate limit exceeded. Please wait until ${new Date(
               parseInt(error.response.headers["x-ratelimit-reset"]) * 1000
-            ).toLocaleTimeString()} or add a GitHub token (feature coming soon).`;
+            ).toLocaleTimeString()} or use the --gh-token option to increase your rate limit.`;
           } else {
             errorMessage = `Access forbidden: ${
               error.response.data.message ||
@@ -171,7 +171,14 @@ const fetchFolderContents = async (owner, repo, branch, folderPath, token) => {
  * @param {string} [token] - GitHub Personal Access Token
  * @returns {Promise<Object>} - Object containing download status
  */
-const downloadFile = async (owner, repo, branch, filePath, outputPath, token) => {
+const downloadFile = async (
+  owner,
+  repo,
+  branch,
+  filePath,
+  outputPath,
+  token
+) => {
   const headers = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
@@ -223,7 +230,10 @@ const downloadFile = async (owner, repo, branch, filePath, outputPath, token) =>
   const url = `${baseUrl}${fileUrlPath}`;
 
   try {
-    const response = await axios.get(url, { responseType: "arraybuffer", headers });
+    const response = await axios.get(url, {
+      responseType: "arraybuffer",
+      headers,
+    });
 
     // Ensure the directory exists
     try {
@@ -363,7 +373,13 @@ const downloadFolder = async (
   );
 
   try {
-    const contents = await fetchFolderContents(owner, repo, branch, folderPath, token);
+    const contents = await fetchFolderContents(
+      owner,
+      repo,
+      branch,
+      folderPath,
+      token
+    );
 
     if (!contents || contents.length === 0) {
       const message = `No files found in ${folderPath || "repository root"}`;
@@ -565,7 +581,11 @@ const downloadFolderWithResume = async (
   const { resume = true, forceRestart = false, token } = options;
 
   if (!resume) {
-    return downloadFolder({ owner, repo, branch, folderPath }, outputDir, options);
+    return downloadFolder(
+      { owner, repo, branch, folderPath },
+      outputDir,
+      options
+    );
   }
 
   const resumeManager = new ResumeManager();
@@ -637,7 +657,13 @@ const downloadFolderWithResume = async (
   );
 
   try {
-    const contents = await fetchFolderContents(owner, repo, branch, folderPath, token);
+    const contents = await fetchFolderContents(
+      owner,
+      repo,
+      branch,
+      folderPath,
+      token
+    );
     if (!contents || contents.length === 0) {
       const message = `No files found in ${folderPath || "repository root"}`;
       console.log(chalk.yellow(message));

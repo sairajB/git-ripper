@@ -120,9 +120,9 @@ You can use either a **Fine-grained token** (Recommended) or a **Classic token**
 4.  **Resource owner**: Select your user.
 5.  **Repository access**: Select **Only select repositories** and choose the private repository you want to download from.
 6.  **Permissions**:
-    *   Click on **Repository permissions**.
-    *   Find **Contents** and change Access to **Read-only**.
-    *   *Note: Metadata permission is selected automatically.*
+    - Click on **Repository permissions**.
+    - Find **Contents** and change Access to **Read-only**.
+    - _Note: Metadata permission is selected automatically._
 7.  Click **Generate token**.
 
 #### Option B: Classic Token
@@ -131,7 +131,7 @@ You can use either a **Fine-grained token** (Recommended) or a **Classic token**
 2.  Click **Generate new token** > **Generate new token (classic)**.
 3.  Give your token a descriptive name.
 4.  **Select Scopes:**
-    *   **For Private Repositories:** Select the **`repo`** scope (Full control of private repositories).
+    - **For Private Repositories:** Select the **`repo`** scope (Full control of private repositories).
 5.  Click **Generate token**.
 
 ### Using the Token
@@ -172,6 +172,13 @@ git-ripper https://github.com/nodejs/node/tree/main/doc -o ./node-docs
 ```bash
 # Extract Tailwind components
 git-ripper https://github.com/tailwindlabs/tailwindcss/tree/master/src/components -o ./tailwind-components
+```
+
+### Download from Private Repository
+
+```bash
+# Download from a private repository using a token
+git-ripper https://github.com/my-org/private-project/tree/main/src --gh-token ghp_abc123...
 ```
 
 ### Download and Create Archive
@@ -260,7 +267,10 @@ Git-ripper works out of the box without configuration. For rate-limited GitHub A
 Error: Request failed with status code 403
 ```
 
-**Solution**: GitHub limits unauthenticated API requests. Wait a few minutes and try again.
+**Solution**: GitHub limits unauthenticated API requests. You can either:
+
+1. Wait a few minutes and try again
+2. Use the `--gh-token` option with a Personal Access Token to significantly increase your rate limit
 
 #### Invalid URL Format
 
