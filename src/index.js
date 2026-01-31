@@ -1,12 +1,17 @@
 import { program } from "commander";
 import { parseGitHubUrl } from "./parser.js";
-import { downloadFolder, downloadFolderWithResume, downloadFile } from "./downloader.js";
+import {
+  downloadFolder,
+  downloadFolderWithResume,
+  downloadFile,
+} from "./downloader.js";
 import { downloadAndArchive } from "./archiver.js";
 import { ResumeManager } from "./resumeManager.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, basename } from "node:path";
 import fs from "node:fs";
 import process from "node:process";
+import readline from "node:readline";
 import chalk from "chalk";
 
 // Get package.json for version
@@ -38,7 +43,7 @@ const validateOutputDirectory = (outputDir) => {
       const stats = fs.statSync(resolvedDir);
       if (!stats.isDirectory()) {
         throw new Error(
-          `Output path exists but is not a directory: ${outputDir}`
+          `Output path exists but is not a directory: ${outputDir}`,
         );
       }
     }
@@ -61,7 +66,10 @@ const initializeCLI = () => {
     .description("Clone specific folders from GitHub repositories")
     .argument("[url]", "GitHub URL of the folder to clone")
     .option("-o, --output <directory>", "Output directory", process.cwd())
-    .option("--gh-token <token>", "GitHub Personal Access Token for private repositories")
+    .option(
+      "--gh-token <token>",
+      "GitHub Personal Access Token for private repositories",
+    )
     .option("--zip [filename]", "Create ZIP archive of downloaded files")
     .option("--no-resume", "Disable resume functionality")
     .option("--force-restart", "Ignore existing checkpoints and start fresh")
@@ -85,7 +93,7 @@ const initializeCLI = () => {
             console.log(`   Output: ${cp.outputDir}`);
             console.log(`   Progress: ${cp.progress}`);
             console.log(
-              `   Last Updated: ${new Date(cp.timestamp).toLocaleString()}`
+              `   Last Updated: ${new Date(cp.timestamp).toLocaleString()}`,
             );
             if (cp.failedFiles > 0) {
               console.log(chalk.yellow(`   Failed Files: ${cp.failedFiles}`));
@@ -98,7 +106,7 @@ const initializeCLI = () => {
         // URL is required for download operations
         if (!url) {
           console.error(
-            chalk.red("Error: URL is required for download operations")
+            chalk.red("Error: URL is required for download operations"),
           );
           console.log("Use --list-checkpoints to see existing downloads");
           process.exit(1);
@@ -106,6 +114,66 @@ const initializeCLI = () => {
 
         console.log(`Parsing URL: ${url}`);
         const parsedUrl = parseGitHubUrl(url);
+
+        // Warning for full repo links
+        if (!parsedUrl.branch && !parsedUrl.folderPath) {
+          console.log(
+            chalk.yellow(
+              "\n⚠️  WARNING: You've provided a full repository link.",
+            ),
+          );
+          console.log(
+            chalk.yellow(
+              "This tool will attempt to download the entire repository, which may:",
+            ),
+          );
+          console.log(chalk.yellow("  • Trigger GitHub API rate limits"));
+          console.log(
+            chalk.yellow("  • Take a long time for large repositories"),
+          );
+          console.log(chalk.yellow("  • Consume significant bandwidth\n"));
+          console.log(
+            chalk.cyan(
+              "💡 Recommendation: Use 'git clone' instead for full repositories:",
+            ),
+          );
+          console.log(
+            chalk.cyan(
+              `   git clone https://github.com/${parsedUrl.owner}/${parsedUrl.repo}.git\n`,
+            ),
+          );
+          console.log(
+            chalk.gray("To download a specific folder, use a URL like:"),
+          );
+          console.log(
+            chalk.gray(
+              `https://github.com/${parsedUrl.owner}/${parsedUrl.repo}/tree/<branch>/<folder-path>\n`,
+            ),
+          );
+
+          // Prompt user for confirmation
+          const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+          });
+
+          const answer = await new Promise((resolve) => {
+            rl.question(
+              chalk.bold.white("Do you still want to proceed? (Y/n): "),
+              (ans) => {
+                rl.close();
+                resolve(ans.trim().toLowerCase());
+              },
+            );
+          });
+
+          if (answer !== "yes" && answer !== "y") {
+            console.log(chalk.yellow("\nOperation cancelled by user."));
+            process.exit(0);
+          }
+
+          console.log(chalk.green("\nProceeding with download...\n"));
+        }
 
         // Validate output directory
         try {
@@ -133,7 +201,12 @@ const initializeCLI = () => {
         try {
           if (createArchive) {
             console.log(`Creating ZIP archive...`);
-            await downloadAndArchive(parsedUrl, options.output, archiveName, downloadOptions);
+            await downloadAndArchive(
+              parsedUrl,
+              options.output,
+              archiveName,
+              downloadOptions,
+            );
           } else if (parsedUrl.type === "blob") {
             console.log(`Downloading file to: ${options.output}`);
             const fileName = basename(parsedUrl.folderPath);
@@ -144,7 +217,7 @@ const initializeCLI = () => {
               parsedUrl.branch,
               parsedUrl.folderPath,
               outputPath,
-              options.ghToken
+              options.ghToken,
             );
           } else {
             console.log(`Downloading folder to: ${options.output}`);
@@ -152,10 +225,14 @@ const initializeCLI = () => {
               result = await downloadFolderWithResume(
                 parsedUrl,
                 options.output,
-                downloadOptions
+                downloadOptions,
               );
             } else {
-              result = await downloadFolder(parsedUrl, options.output, downloadOptions);
+              result = await downloadFolder(
+                parsedUrl,
+                options.output,
+                downloadOptions,
+              );
             }
           }
         } catch (opError) {
@@ -165,9 +242,9 @@ const initializeCLI = () => {
         // Consolidated result and error handling
         if (error) {
           const failMsg =
-            operationType === "archive"
-              ? `Archive creation failed: ${error.message}`
-              : `Download failed: ${error.message}`;
+            operationType === "archive" ?
+              `Archive creation failed: ${error.message}`
+            : `Download failed: ${error.message}`;
           console.error(chalk.red(failMsg));
           process.exit(1);
         } else if (!createArchive && result && !result.success) {
