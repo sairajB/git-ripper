@@ -94,14 +94,16 @@ git-ripper https://github.com/username/repository/tree/branch/folder --zip="my-a
 ### Command Line Options
 
 | Option                     | Description                              | Default           |
-| -------------------------- | ---------------------------------------- | ----------------- |
+| -------------------------- | ---------------------------------------- | ----------------- | --- | -------------------------- | ------------------------- | --- |
 | `-o, --output <directory>` | Specify output directory                 | Current directory |
 | `--gh-token <token>`       | GitHub Personal Access Token             | -                 |
 | `--zip [filename]`         | Create ZIP archive of downloaded content | -                 |
 | `--no-resume`              | Disable resume functionality             | -                 |
 | `--force-restart`          | Ignore existing checkpoints and restart  | -                 |
-| `--list-checkpoints`       | List all saved download checkpoints      | -                 |
-| `-V, --version`            | Show version number                      | -                 |
+| `--list-checkpoints`       | List all saved download checkpoints      | -                 |     | `config set-token <token>` | Save GitHub token locally | -   |
+| `config get-token`         | Show saved token (masked)                | -                 |
+| `config remove-token`      | Remove saved token                       | -                 |
+| `config show`              | Show current configuration               | -                 |     | `-V, --version`            | Show version number       | -   |
 | `-h, --help`               | Show help                                | -                 |
 
 ## Authentication (Private Repositories & Rate Limits)
@@ -136,10 +138,60 @@ You can use either a **Fine-grained token** (Recommended) or a **Classic token**
 
 ### Using the Token
 
+#### Option 1: Save Token Locally (Recommended)
+
+Save your token once and use it automatically for all future downloads:
+
+```bash
+# Save the token
+git-ripper config set-token ghp_YourTokenHere
+
+# Now just download - token is used automatically
+git-ripper https://github.com/username/private-repo/tree/main/src
+```
+
+#### Option 2: Environment Variable
+
+Set the `GIT_RIPPER_TOKEN` environment variable:
+
+```bash
+# Windows (PowerShell)
+$env:GIT_RIPPER_TOKEN = "ghp_YourTokenHere"
+
+# Linux/Mac
+export GIT_RIPPER_TOKEN="ghp_YourTokenHere"
+
+# Then download
+git-ripper https://github.com/username/private-repo/tree/main/src
+```
+
+#### Option 3: Command Line Flag
+
 Pass the token using the `--gh-token` flag:
 
 ```bash
 git-ripper https://github.com/username/private-repo/tree/main/src --gh-token ghp_YourTokenHere
+```
+
+#### Token Priority
+
+When multiple tokens are available, git-ripper uses this priority:
+
+1. `--gh-token` command line flag (highest)
+2. `GIT_RIPPER_TOKEN` environment variable
+3. Saved token from `config set-token`
+
+#### Managing Saved Tokens
+
+```bash
+# View current configuration
+git-ripper config show
+
+# View saved token (masked)
+git-ripper config get-token
+
+# Remove saved token
+git-ripper config remove-token
 ```
 
 > **Security Note:** Be careful not to share your token or commit it to public repositories.

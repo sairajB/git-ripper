@@ -7,6 +7,7 @@ import {
 } from "./downloader.js";
 import { downloadAndArchive } from "./archiver.js";
 import { ResumeManager } from "./resumeManager.js";
+import { ConfigManager } from "./configManager.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, basename } from "node:path";
 import fs from "node:fs";
@@ -61,6 +62,90 @@ const validateOutputDirectory = (outputDir) => {
 };
 
 const initializeCLI = () => {
+  const configManager = new ConfigManager();
+
+  // Add config subcommand
+  const configCmd = program
+    .command("config")
+    .description("Manage git-ripper configuration");
+
+  configCmd
+    .command("set-token <token>")
+    .description("Save GitHub Personal Access Token locally")
+    .action((token) => {
+      try {
+        configManager.setToken(token);
+        console.log(chalk.green("Token saved successfully!"));
+        console.log(
+          chalk.yellow(
+            "Security note: Keep your config file secure. Location: " +
+              configManager.getConfigPath(),
+          ),
+        );
+      } catch (error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+        process.exit(1);
+      }
+    });
+
+  configCmd
+    .command("get-token")
+    .description("Show saved GitHub token (masked)")
+    .action(() => {
+      const token = configManager.getToken();
+      if (token) {
+        console.log(`Saved token: ${configManager.maskToken(token)}`);
+      } else {
+        console.log(chalk.yellow("No token saved."));
+        console.log(
+          "Use 'git-ripper config set-token <token>' to save a token.",
+        );
+      }
+    });
+
+  configCmd
+    .command("remove-token")
+    .description("Remove saved GitHub token")
+    .action(() => {
+      if (configManager.removeToken()) {
+        console.log(chalk.green("Token removed successfully."));
+      } else {
+        console.log(chalk.yellow("No token was saved."));
+      }
+    });
+
+  configCmd
+    .command("show")
+    .description("Show current configuration")
+    .action(() => {
+      const config = configManager.showConfig();
+      console.log(chalk.cyan("\nGit-ripper Configuration:"));
+      console.log(`  Config file: ${config.configPath}`);
+      console.log(
+        `  Stored token: ${
+          config.hasStoredToken ?
+            chalk.green(config.maskedToken)
+          : chalk.gray("Not set")
+        }`,
+      );
+      if (config.tokenSavedAt) {
+        console.log(
+          `  Token saved: ${new Date(config.tokenSavedAt).toLocaleString()}`,
+        );
+      }
+      console.log(
+        `  Environment token (GIT_RIPPER_TOKEN): ${
+          config.hasEnvToken ? chalk.green("Set") : chalk.gray("Not set")
+        }`,
+      );
+      console.log(
+        chalk.gray(
+          "\n  Token priority: --gh-token flag > GIT_RIPPER_TOKEN env > stored token",
+        ),
+      );
+      console.log();
+    });
+
   program
     .version(packageJson.version)
     .description("Clone specific folders from GitHub repositories")
@@ -187,11 +272,21 @@ const initializeCLI = () => {
         const archiveName =
           typeof options.zip === "string" ? options.zip : null;
 
+        // Resolve token with priority: CLI flag > env var > stored config
+        const resolvedToken = configManager.resolveToken(options.ghToken);
+        if (resolvedToken && !options.ghToken) {
+          const source =
+            process.env.GIT_RIPPER_TOKEN ?
+              "environment variable"
+            : "saved config";
+          console.log(chalk.gray(`Using GitHub token from ${source}`));
+        }
+
         // Prepare download options
         const downloadOptions = {
           resume: options.resume !== false, // Default to true unless --no-resume
           forceRestart: options.forceRestart || false,
-          token: options.ghToken,
+          token: resolvedToken,
         };
 
         let operationType = createArchive ? "archive" : "download";
@@ -217,7 +312,7 @@ const initializeCLI = () => {
               parsedUrl.branch,
               parsedUrl.folderPath,
               outputPath,
-              options.ghToken,
+              resolvedToken,
             );
           } else {
             console.log(`Downloading folder to: ${options.output}`);
