@@ -9,7 +9,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/issues)
 [![GitHub stars](https://img.shields.io/github/stars/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/sairajB/git-ripper.svg)](https://github.com/sairajB/git-ripper/network)
-[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)](https://github.com/sairajB/git-ripper/commits/master)
+[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)](https://github.com/sairajB/git-ripper/commits/main)
 
 **Download specific folders from GitHub repositories without cloning the entire codebase**
 
