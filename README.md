@@ -94,16 +94,18 @@ git-ripper https://github.com/username/repository/tree/branch/folder --zip="my-a
 ### Command Line Options
 
 | Option                     | Description                              | Default           |
-| -------------------------- | ---------------------------------------- | ----------------- | --- | -------------------------- | ------------------------- | --- |
+| -------------------------- | ---------------------------------------- | ----------------- |
 | `-o, --output <directory>` | Specify output directory                 | Current directory |
 | `--gh-token <token>`       | GitHub Personal Access Token             | -                 |
 | `--zip [filename]`         | Create ZIP archive of downloaded content | -                 |
 | `--no-resume`              | Disable resume functionality             | -                 |
 | `--force-restart`          | Ignore existing checkpoints and restart  | -                 |
-| `--list-checkpoints`       | List all saved download checkpoints      | -                 |     | `config set-token <token>` | Save GitHub token locally | -   |
+| `--list-checkpoints`       | List all saved download checkpoints      | -                 |
+| `config set-token <token>` | Save GitHub token locally                | -                 |
 | `config get-token`         | Show saved token (masked)                | -                 |
 | `config remove-token`      | Remove saved token                       | -                 |
-| `config show`              | Show current configuration               | -                 |     | `-V, --version`            | Show version number       | -   |
+| `config show`              | Show current configuration               | -                 |
+| `-V, --version`            | Show version number                      | -                 |
 | `-h, --help`               | Show help                                | -                 |
 
 ## Authentication (Private Repositories & Rate Limits)
