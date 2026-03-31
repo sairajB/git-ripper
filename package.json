@@ -51,6 +51,7 @@
   "files": [
     "bin/",
     "src/",
+    "README.md",
     "LICENSE"
   ],
   "publishConfig": {
